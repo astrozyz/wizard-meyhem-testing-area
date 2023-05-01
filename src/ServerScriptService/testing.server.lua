@@ -1,0 +1,1 @@
+print("I like monkeys and pine is stupid and he should kill himself")
