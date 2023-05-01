@@ -1,1 +1,0 @@
-print("Pine should kill himself")
