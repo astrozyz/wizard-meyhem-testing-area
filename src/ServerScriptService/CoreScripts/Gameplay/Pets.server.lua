@@ -1,5 +1,7 @@
 local eggs = workspace.Eggs
-local hatchRemote = game.ReplicatedStorage.Events.Gameplay.HatchEgg
+-- local hatchRemote = game.ReplicatedStorage.Events.Gameplay.HatchEgg
+local equipPetRemote = game.ReplicatedStorage.Events.Gameplay.EquipPet
+local http = game:GetService("HttpService")
 
 local hatchingMod = require(script.Parent.HatchingModule)
 
@@ -17,3 +19,25 @@ for _, egg in eggs:GetChildren() do
 		end
 	end)
 end
+
+equipPetRemote.OnServerEvent:Connect(function(player, petName, equip)
+	local plrPets = player.GameData.Pets.Value
+	plrPets = http:JSONDecode(plrPets)
+
+	local success = false
+	local result
+
+	if plrPets and plrPets[petName] then 
+		if equip then 
+			result = hatchingMod.EquipPet(player, petName)
+		else
+			result = hatchingMod.UnequipPet(player, petName)
+		end
+
+		if result then 
+			success = result
+		end
+	end
+
+	equipPetRemote:FireClient(player, success)
+end)

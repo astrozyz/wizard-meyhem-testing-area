@@ -117,4 +117,20 @@ function module.HatchEgg(player, requestedEggType)
 	end)
 end
 
+function module.EquipPet(player, petName)
+	local foundPet = petsFolder:FindFirstChild(petName, true)
+
+	if foundPet then 
+		local character = player.character
+
+		if character and character.Humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
+			--spawn alighposition and set up pet equips
+		end
+	end
+end
+
+function module.UnequipPet(player, petName)
+
+end
+
 return module

@@ -266,11 +266,14 @@ local petsBtn = ui:WaitForChild("Pets")
 local petsClose = petsUi:WaitForChild("Close")
 local petTemplate = script:WaitForChild("PetTemplate")
 local currentPetSelected
+
+local equipPetRemote : RemoteEvent = events.Gameplay:WaitForChild("EquipPet")
+
 local petsConnections = {}
 
 local petInfo : Frame = petsUi:WaitForChild("Info")
 local petName : TextLabel = petInfo:WaitForChild("PetName")
-local petDesc : TextLabel = petInfo:WaitForChild("PetsDesc")
+local petDesc : TextLabel = petInfo:WaitForChild("PetDesc")
 local petIcon : ImageLabel = petInfo:WaitForChild("Icon")
 local petType : TextLabel = petInfo:WaitForChild("Type")
 local petRarity : TextLabel = petInfo:WaitForChild("Rarity")
@@ -280,38 +283,65 @@ local petUnequip :ImageButton = petInfo:WaitForChild("Unequip")
 
 petsBtn.MouseButton1Click:Connect(function()
 	if not petsUi.Visible and cantween then
-		openUi(petsOriginalPos, petsUi)
-
 		local decode = http:JSONDecode(playerPets.Value)
-
-		if #decode > 0 then 
+		print(decode)
 			for pet, amount in decode do
 				local foundPet = pets:FindFirstChild(pet, true)
-
 				if foundPet then 
-					local template = petTemplate:Clone()
-					template.ImageButton.Image = foundPet:GetAttribute("PetIcon")
-					template.Parent = petsUi:WaitForChild("Pets"):WaitForChild("Holder")
-					template.Name = foundPet.Name
-					template:SetAttribute("Rarity", foundPet.Parent.Name)
-					template:SetAttribute("Type", template:GetAttribute("Type"))
-					
-					local con = template.ImageButton.MouseButton1Click:Connect(function()
-						currentPetSelected = template.Name
+					for i = 1, amount, 1 do 
+						local template = petTemplate:Clone()
+						template.ImageButton.Image = foundPet:GetAttribute("PetIcon")
+						template.Parent = petsUi:WaitForChild("Pets"):WaitForChild("Holder")
+						template.Name = foundPet.Name
+						template:SetAttribute("Rarity", foundPet.Parent.Name)
+						template:SetAttribute("Type", template:GetAttribute("Type"))
+						
+						local con = template.ImageButton.MouseButton1Click:Connect(function()
+							currentPetSelected = {template.Name, template}
 
-						petIcon.Image = template.ImageButton.Image
-						petName.Text = template.Name
-						petDesc.Text = "Test"
-						petLvl.Text = "Level 1"
-					end) 
+							petIcon.Image = template.ImageButton.Image
+							petName.Text = template.Name
+							petDesc.Text = "Test"
+							petLvl.Text = "Level 1"
+						end) 
 
-					table.insert(petsConnections, con)
+						table.insert(petsConnections, con)
+					end
 				end
 			end
-		end
+		openUi(petsOriginalPos, petsUi)
 	end
 end) 
 
 petsClose.MouseButton1Click:Connect(function()
 	closeButton(petsUi, petsOriginalPos, petsConnections)
+
+	for _, button in petsUi.Pets.Holder:GetChildren() do 
+		if button:IsA("ImageButton") then 
+			button:Destroy()
+		end
+	end
+end)
+
+petEquip.MouseButton1Click:Connect(function()
+	if currentPetSelected then 
+		equipPetRemote:FIreServer(currentPetSelected[1], true)
+
+		equipPetRemote.OnClientEvent:Once(function(result)
+			if result then 
+				currentPetSelected[2]:SetAttribute("Equipped", true)
+			end
+		end)
+	end
+end)
+
+petUnequip.MouseButton1Click:Connect(function()
+	if currentPetSelected and currentPetSelected[2]:GetAttribute("Equipped") then 
+		equipPetRemote:FireServer(currentPetSelected[1], false)
+		equipPetRemote.OnClientEvent:Once(function(result)
+			if result then 
+				currentPetSelected[2]:SetAttribute("Equipped", nil)
+			end
+		end)
+	end
 end)
