@@ -325,7 +325,7 @@ end)
 
 petEquip.MouseButton1Click:Connect(function()
 	if currentPetSelected then 
-		equipPetRemote:FIreServer(currentPetSelected[1], true)
+		equipPetRemote:FireServer(currentPetSelected[1], true)
 
 		equipPetRemote.OnClientEvent:Once(function(result)
 			if result then 

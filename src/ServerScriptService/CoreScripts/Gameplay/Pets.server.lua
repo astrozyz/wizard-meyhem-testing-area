@@ -27,13 +27,15 @@ equipPetRemote.OnServerEvent:Connect(function(player, petName, equip)
 	local success = false
 	local result
 
-	if plrPets and plrPets[petName] then 
+	if plrPets and plrPets[petName] then
+		print("ijsdjsdfuo")
 		if equip then 
 			result = hatchingMod.EquipPet(player, petName)
 		else
 			result = hatchingMod.UnequipPet(player, petName)
 		end
 
+		print(result)
 		if result then 
 			success = result
 		end

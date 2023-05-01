@@ -117,14 +117,28 @@ function module.HatchEgg(player, requestedEggType)
 	end)
 end
 
+local playerPetsFolder = workspace.PlayerPets
+
 function module.EquipPet(player, petName)
 	local foundPet = petsFolder:FindFirstChild(petName, true)
 
 	if foundPet then 
+		print("sdhfusdfh")
 		local character = player.character
 
 		if character and character.Humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
-			--spawn alighposition and set up pet equips
+			print("sdjfosd")
+			local pet = foundPet:Clone()
+			local playerFolder = playerPetsFolder:FindFirstChild("Pets") or Instance.new("Folder", playerPetsFolder)
+			playerFolder.Name = "Pets"
+			print(playerFolder, playerFolder.Name, playerFolder.Parent)
+
+			local alignPos : AlignPosition, alignOrient : AlignOrientation = pet.PrimaryPart.AlignPosition, pet.PrimaryPart.AlignOrientation
+
+			pet.Parent = playerFolder
+			alignPos.Attachment1 = character.HumanoidRootPart.RootAttachment
+			alignOrient.Attachment1 = character.HumanoidRootPart.RootAttachment 
+			return true
 		end
 	end
 end

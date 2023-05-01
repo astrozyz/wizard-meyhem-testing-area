@@ -2,6 +2,8 @@ local datastore = game:GetService("DataStoreService")
 local playerData = datastore:GetDataStore("PlayerData")
 local http = game:GetService("HttpService")
 
+local hatchingMod = require(game.ServerScriptService.CoreScripts.Gameplay.HatchingModule)
+
 local template = game.ServerStorage.PlayerTemplate:GetChildren()
 
 local dailyRewards = {
@@ -25,6 +27,7 @@ game.Players.PlayerAdded:Connect(function(player)
 		loadedData = http:JSONDecode(loadedData)
 		money.Value = loadedData.Money
 		mana.Value = loadedData.Mana
+		gameData.EquippedPets.Value = http:JSONEncode(loadedData.EquippedPets)
 	else
 		loadedData = {}
 	end
@@ -59,7 +62,7 @@ game.Players.PlayerAdded:Connect(function(player)
 	player:SetAttribute("LastAbility", 0)
 	player:SetAttribute("LastSwung", 0)
 	
-	player.GameData.Pets.Value = loadedData.Pets or "[]"
+	gameData.Pets.Value = loadedData.Pets or "[]"
 
 	leaderboard.Parent = player
 end)
