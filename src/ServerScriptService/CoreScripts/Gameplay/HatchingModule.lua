@@ -1,6 +1,6 @@
 local module = {}
 
-local petsFolder = game.ServerStorage.Pets
+local petsFolder = game.ReplicatedStorage.Pets
 local hatchEvent = game.ReplicatedStorage.Events.Gameplay.HatchEgg
 local http = game:GetService("HttpService")
 local pets = {

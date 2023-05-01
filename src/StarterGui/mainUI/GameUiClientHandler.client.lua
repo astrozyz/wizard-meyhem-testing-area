@@ -1,12 +1,17 @@
 local ui = script.Parent
 local events = game:GetService("ReplicatedStorage"):WaitForChild("Events")
 local shopBuyRemote = events:WaitForChild("Gameplay"):WaitForChild("ItemShopPurchase")
-local player = game:GetService("Players").LocalPlayer
+local player : Player = game:GetService("Players").LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid : Humanoid = character:WaitForChild("Humanoid")
 
+local gameData = player:WaitForChild("GameData")
+local playerPets = gameData:WaitForChild("Pets")
+local playerInv = gameData:WaitForChild("Inventory")
+
 local tweenService = game:GetService("TweenService")
 local content = game:GetService("ContentProvider")
+local http = game:GetService("HttpService")
 
 local models = game:GetService("ReplicatedStorage"):WaitForChild("Models")
 local staffModels = models:WaitForChild("Weapons"):GetChildren()
@@ -56,6 +61,18 @@ local function openUi(originalPos, tweenUi)
 
 		tweenUi.Visible = false
 		cantween = true
+	end
+end
+
+local function closeButton(frame, originalPos, connections)
+	if frame.Visible and cantween then
+		openUi(originalPos, frame)
+	
+		if connections then 
+			for _, con in connections do
+				con:Disconnect()
+			end
+		end
 	end
 end
 
@@ -203,13 +220,7 @@ shopBtn.MouseButton1Click:Connect(function()
 end)
 
 shopClose.MouseButton1Click:Connect(function()
-	if shopFrame.Visible and cantween then
-		openUi(shopOriginalPos, shopFrame)
-
-		for _, con in shopButtonConnections do
-			con:Disconnect()
-		end
-	end
+	closeButton(shopFrame, shopOriginalPos, shopButtonConnections)
 end)
 
 repeat task.wait() until player:GetAttribute("Level") and player:GetAttribute("XP")
@@ -245,4 +256,62 @@ local healthBar = healthUi:WaitForChild("Bar")
 
 humanoid:GetPropertyChangedSignal("Health"):Connect(function()
 	healthBar:TweenSize(UDim2.fromScale(0.816, -(math.clamp(humanoid.Health/humanoid.MaxHealth, 0, 1))), Enum.EasingDirection.Out, Enum.EasingStyle.Linear, .2, true)
+end)
+
+local pets = game:GetService("ReplicatedStorage").Pets
+
+local petsUi = ui:WaitForChild("PetsFrame")
+local petsOriginalPos = UDim2.new(0.223, 0,0.132, 0)
+local petsBtn = ui:WaitForChild("Pets")
+local petsClose = petsUi:WaitForChild("Close")
+local petTemplate = script:WaitForChild("PetTemplate")
+local currentPetSelected
+local petsConnections = {}
+
+local petInfo : Frame = petsUi:WaitForChild("Info")
+local petName : TextLabel = petInfo:WaitForChild("PetName")
+local petDesc : TextLabel = petInfo:WaitForChild("PetsDesc")
+local petIcon : ImageLabel = petInfo:WaitForChild("Icon")
+local petType : TextLabel = petInfo:WaitForChild("Type")
+local petRarity : TextLabel = petInfo:WaitForChild("Rarity")
+local petLvl : TextLabel = petInfo:WaitForChild("Lvl")
+local petEquip : ImageButton = petInfo:WaitForChild("Equip")
+local petUnequip :ImageButton = petInfo:WaitForChild("Unequip")
+
+petsBtn.MouseButton1Click:Connect(function()
+	if not petsUi.Visible and cantween then
+		openUi(petsOriginalPos, petsUi)
+
+		local decode = http:JSONDecode(playerPets.Value)
+
+		if #decode > 0 then 
+			for pet, amount in decode do
+				local foundPet = pets:FindFirstChild(pet, true)
+
+				if foundPet then 
+					local template = petTemplate:Clone()
+					template.ImageButton.Image = foundPet:GetAttribute("PetIcon")
+					template.Parent = petsUi:WaitForChild("Pets"):WaitForChild("Holder")
+					template.Name = foundPet.Name
+					template:SetAttribute("Rarity", foundPet.Parent.Name)
+					template:SetAttribute("Type", template:GetAttribute("Type"))
+					
+					local con = template.ImageButton.MouseButton1Click:Connect(function()
+						currentPetSelected = template.Name
+
+						petIcon.Image = template.ImageButton.Image
+						petName.Text = template.Name
+						petDesc.Text = "Test"
+						petLvl.Text = "Level 1"
+					end) 
+
+					table.insert(petsConnections, con)
+				end
+			end
+		end
+	end
+end) 
+
+petsClose.MouseButton1Click:Connect(function()
+	closeButton(petsUi, petsOriginalPos, petsConnections)
 end)

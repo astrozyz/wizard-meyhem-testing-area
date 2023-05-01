@@ -1,1 +1,0 @@
-print("Hey guys whats up welcome to my roblox tutorial today we are going to work on studio")
