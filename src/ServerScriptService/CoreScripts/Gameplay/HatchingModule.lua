@@ -138,6 +138,11 @@ function module.EquipPet(player, petName)
 			pet.Parent = playerFolder
 			alignPos.Attachment1 = character.HumanoidRootPart.RootAttachment
 			alignOrient.Attachment1 = character.HumanoidRootPart.RootAttachment 
+
+			local petsTable = http:JSONDecode(player.GameData.EquippedPets.Value) or {}
+			print(petsTable)
+			table.insert(petsTable, petName)
+			player.GameData.EquippedPets.Value = http:JSONEncode(petsTable)
 			return true
 		end
 	end

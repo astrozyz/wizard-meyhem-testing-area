@@ -19,7 +19,7 @@ game.Players.PlayerAdded:Connect(function(player)
 	local gameData = player.GameData
 	local leaderboard = player.leaderstats
 	local mana = leaderboard.Mana
-	local money = leaderboard.Money 
+	local money = leaderboard.Money
 	
 	local loadedData = playerData:GetAsync(player.UserId)
 
@@ -27,7 +27,8 @@ game.Players.PlayerAdded:Connect(function(player)
 		loadedData = http:JSONDecode(loadedData)
 		money.Value = loadedData.Money
 		mana.Value = loadedData.Mana
-		gameData.EquippedPets.Value = http:JSONEncode(loadedData.EquippedPets)
+		local toEncode = loadedData.EquippedPets or {}
+		gameData.EquippedPets.Value = http:JSONEncode(toEncode) 
 	else
 		loadedData = {}
 	end
@@ -63,8 +64,12 @@ game.Players.PlayerAdded:Connect(function(player)
 	player:SetAttribute("LastSwung", 0)
 	
 	gameData.Pets.Value = loadedData.Pets or "[]"
-
 	leaderboard.Parent = player
+
+	for _, petName in loadedData.EquippedPets do 
+		hatchingMod.EquipPet(player, petName)
+		print(petName, loadedData.EquippedPets)
+	end
 end)
 
 local function saveData(player)
@@ -75,7 +80,8 @@ local function saveData(player)
 		XP = player:GetAttribute("XP"),
 		Level = player:GetAttribute("Level"),
 		LoginStreak = player:GetAttribute("LoginStreak"),
-		Pets = player.GameData.Pets.Value
+		Pets = player.GameData.Pets.Value,
+		EquippedPets = http:JSONDecode(petsVal)
 	}
 
 	for _, stat in leaderboard:GetChildren() do 
@@ -91,6 +97,6 @@ end)
 
 game:BindToClose(function()
 	for _, player in game.Players:GetPlayers() do
-		saveData(player) 
+		saveData(player)
 	end
 end)
