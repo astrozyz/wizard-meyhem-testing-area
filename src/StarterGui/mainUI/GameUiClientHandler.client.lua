@@ -41,7 +41,7 @@ local xpLevelNum = xpUi:WaitForChild("LevelHolder"):WaitForChild("Level")
 local xpBar = xpUi:WaitForChild("Bar")
 local xpProgress = xpUi:WaitForChild("Progress")
 
-local function openUi(originalPos, tweenUi)
+local function openUi(originalPos : UDim2, tweenUi : ImageLabel)
 	if not tweenUi.Visible then
 		cantween = false
 		local uiTweenInfo = TweenInfo.new(.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0)
@@ -64,7 +64,7 @@ local function openUi(originalPos, tweenUi)
 	end
 end
 
-local function closeButton(frame, originalPos, connections)
+local function closeButton(frame : ImageLabel, originalPos : UDim2, connections : table)
 	if frame.Visible and cantween then
 		openUi(originalPos, frame)
 	
@@ -279,7 +279,7 @@ local petType : TextLabel = petInfo:WaitForChild("Type")
 local petRarity : TextLabel = petInfo:WaitForChild("Rarity")
 local petLvl : TextLabel = petInfo:WaitForChild("Lvl")
 local petEquip : ImageButton = petInfo:WaitForChild("Equip")
-local petUnequip :ImageButton = petInfo:WaitForChild("Unequip")
+local petUnequip : ImageButton = petInfo:WaitForChild("Unequip")
 
 petsBtn.MouseButton1Click:Connect(function()
 	if not petsUi.Visible and cantween then
@@ -335,13 +335,101 @@ petEquip.MouseButton1Click:Connect(function()
 	end
 end)
 
+local petsFolder = game:GetService("ReplicatedStorage").Pets
+local spawnedInPets = workspace:WaitForChild("PlayerPets")
+
 petUnequip.MouseButton1Click:Connect(function()
 	if currentPetSelected and currentPetSelected[2]:GetAttribute("Equipped") then 
 		equipPetRemote:FireServer(currentPetSelected[1], false)
-		equipPetRemote.OnClientEvent:Once(function(result)
-			if result then 
-				currentPetSelected[2]:SetAttribute("Equipped", nil)
-			end
-		end)
 	end
+end)
+
+equipPetRemote.OnClientEvent:Connect(function(result)
+	print(result)
+	if result then 
+		if currentPetSelected then 
+			currentPetSelected[2]:SetAttribute("Equipped", nil)
+		end
+
+		local foundPet = petsFolder:FindFirstChild(result, true)
+		local serverPet = spawnedInPets:FindFirstChild(player.Name):FindFirstChild(result)
+
+		if foundPet and serverPet and #spawnedInPets[player.Name]:GetChildren() < 3 then 
+			foundPet = foundPet:Clone()
+			foundPet.Parent = serverPet.Parent
+			foundPet.PrimaryPart.AlignPosition.Attachment1 = character.HumanoidRootPart.RootAttachment
+			foundPet.PrimaryPart.AlignOrientation.Attachment1 = character.HumanoidRootPart.RootAttachment
+			serverPet:Destroy()
+		end
+	end
+end)
+
+character.Humanoid.Died:Connect(function()
+	local serverPets = spawnedInPets:FindFirstChild(player.Name)
+
+	if serverPets then 
+		for _, pet in serverPets:GetChildren() do
+			pet:Destroy()
+		end
+	end
+end)
+
+local spellsBtn = ui:WaitForChild("Spells")
+local spellsUi = ui:WaitForChild("SpellBook")
+local spellsClose = spellsUi:WaitForChild("Close")
+local spellConnections = {}
+
+spellsBtn.MouseButton1Click:Connect(function()
+	if not spellsUi.Visible and cantween then
+		openUi(shopOriginalPos, spellsUi)
+	end
+end)
+
+spellsClose.MouseButton1Click:Connect(function()
+	closeButton(spellsUi, shopOriginalPos, spellConnections)
+end)
+
+local tradeBtn = ui:WaitForChild("Trade")
+local tradeUi = ui:WaitForChild("TradeFrame")
+local tradeClose = tradeUi:WaitForChild("Close")
+local tradeConnections = {}
+
+tradeBtn.MouseButton1Click:Connect(function()
+	if not tradeUi.Visible and cantween then
+		openUi(shopOriginalPos, tradeUi)
+	end
+end)
+
+tradeClose.MouseButton1Click:Connect(function()
+	closeButton(tradeUi, shopOriginalPos, tradeConnections)
+end)
+
+local spellsBtn = ui:WaitForChild("Spells")
+local spellsUi = ui:WaitForChild("SpellBook")
+local spellsClose = spellsUi:WaitForChild("Close")
+local spellConnections = {}
+
+spellsBtn.MouseButton1Click:Connect(function()
+	if not spellsUi.Visible and cantween then
+		openUi(shopOriginalPos, spellsUi)
+	end
+end)
+
+spellsClose.MouseButton1Click:Connect(function()
+	closeButton(spellsUi, shopOriginalPos, spellConnections)
+end)
+
+local spellsBtn = ui:WaitForChild("Spells")
+local spellsUi = ui:WaitForChild("SpellBook")
+local spellsClose = spellsUi:WaitForChild("Close")
+local spellConnections = {}
+
+spellsBtn.MouseButton1Click:Connect(function()
+	if not spellsUi.Visible and cantween then
+		openUi(shopOriginalPos, spellsUi)
+	end
+end)
+
+spellsClose.MouseButton1Click:Connect(function()
+	closeButton(spellsUi, shopOriginalPos, spellConnections)
 end)

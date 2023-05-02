@@ -42,7 +42,7 @@ function module.GetRandom(t)
 	local TotalWeight = 0
 	local weightsTable = t
 
-	for Piece, Weight in pairs(weightsTable) do
+	for _, Weight in pairs(weightsTable) do
 		TotalWeight = TotalWeight + Weight
 	end
 
@@ -83,7 +83,6 @@ end
 function module.HatchEgg(player, requestedEggType)
 	local pet, rarirty = module.GetRandomPet(requestedEggType)
 	local plrPets = player.GameData.Pets
-	local rarityFolder = game.ServerStorage.Pets:FindFirstChild(rarirty)
 	
 	local decode
 	
@@ -119,7 +118,7 @@ end
 
 local playerPetsFolder = workspace.PlayerPets
 
-function module.EquipPet(player, petName)
+function module.EquipPet(player, petName, isLoading)
 	local foundPet = petsFolder:FindFirstChild(petName, true)
 
 	if foundPet then 
@@ -129,8 +128,8 @@ function module.EquipPet(player, petName)
 		if character and character.Humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
 			print("sdjfosd")
 			local pet = foundPet:Clone()
-			local playerFolder = playerPetsFolder:FindFirstChild("Pets") or Instance.new("Folder", playerPetsFolder)
-			playerFolder.Name = "Pets"
+			local playerFolder = playerPetsFolder:FindFirstChild(player.Name) or Instance.new("Folder", playerPetsFolder)
+			playerFolder.Name = player.Name
 			print(playerFolder, playerFolder.Name, playerFolder.Parent)
 
 			local alignPos : AlignPosition, alignOrient : AlignOrientation = pet.PrimaryPart.AlignPosition, pet.PrimaryPart.AlignOrientation
@@ -138,12 +137,25 @@ function module.EquipPet(player, petName)
 			pet.Parent = playerFolder
 			alignPos.Attachment1 = character.HumanoidRootPart.RootAttachment
 			alignOrient.Attachment1 = character.HumanoidRootPart.RootAttachment 
+			pet:PivotTo(character:GetPivot() * CFrame.new(0,0,-4))
 
-			local petsTable = http:JSONDecode(player.GameData.EquippedPets.Value) or {}
+			local petsTable
+			local s, _ = pcall(function()
+				petsTable = http:JSONDecode(player.GameData.EquippedPets.Value)
+			end)
+
+			if not s then 
+				petsTable = {}
+			end
+
 			print(petsTable)
-			table.insert(petsTable, petName)
-			player.GameData.EquippedPets.Value = http:JSONEncode(petsTable)
-			return true
+			
+			if not isLoading then
+				table.insert(petsTable, petName)
+				player.GameData.EquippedPets.Value = http:JSONEncode(petsTable)
+			end
+			
+			return foundPet.Name
 		end
 	end
 end
