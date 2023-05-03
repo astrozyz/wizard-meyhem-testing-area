@@ -57,10 +57,33 @@ game.Players.PlayerAdded:Connect(function(player)
 
 	if loadedData then 
 		loadedData = http:JSONDecode(loadedData)
-		money.Value = loadedData.Money
+		money.Value = 100000000 --loadedData.Money
 		mana.Value = loadedData.Mana
 		local toEncode = loadedData.EquippedPets or {}
 		gameData.EquippedPets.Value = http:JSONEncode(toEncode) 
+
+		gameData.Pets.Value = loadedData.Pets or "[]"
+		leaderboard.Parent = player
+
+		local inventory 
+
+		local invS, _ = pcall(function()
+			inventory = http:JSONEncode(loadedData.Inventory)
+		end)
+
+		if not invS then 
+			inventory = http:JSONEncode({
+			Weapons = {}, Potions = {}, Armor = {}
+		})
+		end
+
+		if not invS then 
+			inventory = http:JSONEncode({
+			Weapons = {}, Potions = {}, Armor = {}
+		})
+		end
+
+		gameData.Inventory.Value = inventory
 	else
 		loadedData = {}
 	end
@@ -95,10 +118,6 @@ game.Players.PlayerAdded:Connect(function(player)
 	player:SetAttribute("LastAbility", 0)
 	player:SetAttribute("LastSwung", 0)
 	
-	gameData.Pets.Value = loadedData.Pets or "[]"
-	leaderboard.Parent = player
-
-	
 	if player.Character then 
 		loadPets(player)
 	end
@@ -114,13 +133,15 @@ end)
 local function saveData(player)
 	local leaderboard = player.leaderstats
 	local petsVal = player.GameData.EquippedPets.Value or "[]"
+	local inventoryVal = player.GameData.Inventory.Value or http:JSONEncode({Weapons = {}, Potions = {}, Armor = {}})
 	local data = {
 		LastLogin = player:GetAttribute("LastLogin"),
 		XP = player:GetAttribute("XP"),
 		Level = player:GetAttribute("Level"),
 		LoginStreak = player:GetAttribute("LoginStreak"),
 		Pets = player.GameData.Pets.Value,
-		EquippedPets = http:JSONDecode(petsVal)
+		EquippedPets = http:JSONDecode(petsVal),
+		Inventory = http:JSONDecode(inventoryVal)
 	}
 
 	for _, stat in leaderboard:GetChildren() do 

@@ -111,6 +111,11 @@ local function connectShopButtons()
 	end
 end
 
+local shopConfirmation = shopFrame:WaitForChild("Confirmation")
+local shopAccept = shopConfirmation:WaitForChild("Accept")
+local shopDeny = shopConfirmation:WaitForChild("Deny")
+local confirmationDesc = shopConfirmation:WaitForChild("Desc")
+
 shopBtn.MouseButton1Click:Connect(function()
 	if not shopFrame.Visible and cantween then
 		print("sdfsdf")
@@ -211,7 +216,43 @@ shopBtn.MouseButton1Click:Connect(function()
 
 		local buyCon = shopBuy.MouseButton1Click:Connect(function()
 			if itemSelected.Image then 
-				shopBuyRemote:FireServer(itemName.Text)
+				shopConfirmation.Position = UDim2.new(0.136, 0,1.15, 0)
+				shopConfirmation.Visible = true
+				shopConfirmation:TweenPosition(UDim2.new(0.136, 0,0.289, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Back)
+
+				confirmationDesc.Text = "Purchase ".. itemName.Text.. " for ".. itemPrice.Text.. " coins?"
+				local acceptCon, denyCon
+
+				acceptCon = shopAccept.MouseButton1Click:Once(function()
+					denyCon:Disconnect()
+					shopBuyRemote:FireServer(itemName.Text)
+
+					shopBuyRemote.OnClientEvent:Once(function(result)
+						if not result then 
+							confirmationDesc.Text = "Purchase Succeeded"
+						else
+							confirmationDesc.Text = result 
+						end
+
+						task.delay(.2, function()
+							local confirmationTweenOffScreen = tweenService:Create(shopConfirmation, TweenInfo.new(.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(0.136, 0,1.15, 0)})
+							confirmationTweenOffScreen:Play()
+							confirmationTweenOffScreen.Completed:Once(function()
+								shopConfirmation.Visible = false
+							end)
+						end)
+					end)
+				end)
+
+				denyCon = shopDeny.MouseButton1Click:Once(function()
+					acceptCon:Disconnect()
+
+					local confirmationTweenOffScreen = tweenService:Create(shopConfirmation, TweenInfo.new(.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(0.136, 0,1.15, 0)})
+					confirmationTweenOffScreen:Play()
+					confirmationTweenOffScreen.Completed:Once(function()
+						shopConfirmation.Visible = false
+					end)
+				end)
 			end
 		end)
 		
@@ -404,32 +445,32 @@ tradeClose.MouseButton1Click:Connect(function()
 	closeButton(tradeUi, shopOriginalPos, tradeConnections)
 end)
 
-local spellsBtn = ui:WaitForChild("Spells")
-local spellsUi = ui:WaitForChild("SpellBook")
-local spellsClose = spellsUi:WaitForChild("Close")
-local spellConnections = {}
+local invBtn = ui:WaitForChild("Inventory")
+local invUi = ui:WaitForChild("InventoryFrame")
+local invClose = invUi:WaitForChild("Close")
+local invConnections = {}
 
-spellsBtn.MouseButton1Click:Connect(function()
-	if not spellsUi.Visible and cantween then
-		openUi(shopOriginalPos, spellsUi)
+invBtn.MouseButton1Click:Connect(function()
+	if not invUi.Visible and cantween then
+		openUi(shopOriginalPos, invUi)
 	end
 end)
 
-spellsClose.MouseButton1Click:Connect(function()
-	closeButton(spellsUi, shopOriginalPos, spellConnections)
+invClose.MouseButton1Click:Connect(function()
+	closeButton(invUi, shopOriginalPos, invConnections)
 end)
 
-local spellsBtn = ui:WaitForChild("Spells")
-local spellsUi = ui:WaitForChild("SpellBook")
-local spellsClose = spellsUi:WaitForChild("Close")
-local spellConnections = {}
+local settingsBtn = ui:WaitForChild("Settings")
+local settingsUi = ui:WaitForChild("SettingsFrame")
+local settingsClose = settingsUi:WaitForChild("Close")
+local settingsConnections = {}
 
-spellsBtn.MouseButton1Click:Connect(function()
-	if not spellsUi.Visible and cantween then
-		openUi(shopOriginalPos, spellsUi)
+settingsBtn.MouseButton1Click:Connect(function()
+	if not settingsUi.Visible and cantween then
+		openUi(shopOriginalPos, settingsUi)
 	end
 end)
 
-spellsClose.MouseButton1Click:Connect(function()
-	closeButton(spellsUi, shopOriginalPos, spellConnections)
+settingsClose.MouseButton1Click:Connect(function()
+	closeButton(settingsUi, shopOriginalPos, settingsConnections)
 end)
