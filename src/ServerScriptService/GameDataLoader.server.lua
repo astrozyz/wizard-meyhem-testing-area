@@ -132,7 +132,17 @@ end)
 
 local function saveData(player)
 	local leaderboard = player.leaderstats
-	local petsVal = player.GameData.EquippedPets.Value or "[]"
+	local petsVal = player.GameData.EquippedPets.Value
+
+	local petData
+	local petSuccess, _ = pcall(function()
+		petData = http:JSONDecode(petsVal)
+	end)
+
+	if not petSuccess then
+		petData = {}
+	end
+
 	local inventoryVal = player.GameData.Inventory.Value or http:JSONEncode({Weapons = {}, Potions = {}, Armor = {}})
 	local data = {
 		LastLogin = player:GetAttribute("LastLogin"),
@@ -140,7 +150,7 @@ local function saveData(player)
 		Level = player:GetAttribute("Level"),
 		LoginStreak = player:GetAttribute("LoginStreak"),
 		Pets = player.GameData.Pets.Value,
-		EquippedPets = http:JSONDecode(petsVal),
+		EquippedPets = petData,
 		Inventory = http:JSONDecode(inventoryVal)
 	}
 

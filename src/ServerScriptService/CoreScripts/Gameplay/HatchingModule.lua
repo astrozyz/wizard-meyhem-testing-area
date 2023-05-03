@@ -160,8 +160,20 @@ function module.EquipPet(player, petName, isLoading)
 	end
 end
 
-function module.UnequipPet(player, petName)
+local workspacePets = workspace.PlayerPets
 
+function module.UnequipPet(player, petName)
+	local gameData = player.GameData
+	local equippedPets = gameData.EquippedPets
+	local decoded = http:JSONDecode(equippedPets.Value)
+	local foundPet = workspacePets[player.Name]:FindFirstChild(petName)
+
+	if table.find(decoded, petName) and foundPet then 
+		table.remove(decoded, table.find(decoded, petName))
+		equippedPets.Value = http:JSONEncode(decoded)
+		foundPet:Destroy()
+		return true
+	end
 end
 
 return module

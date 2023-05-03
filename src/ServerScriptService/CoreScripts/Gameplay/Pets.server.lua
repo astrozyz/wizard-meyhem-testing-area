@@ -24,21 +24,15 @@ equipPetRemote.OnServerEvent:Connect(function(player, petName, equip)
 	local plrPets = player.GameData.Pets.Value
 	plrPets = http:JSONDecode(plrPets)
 
-	local success
-	local result
-
 	if plrPets and plrPets[petName] then
 		if equip then 
-			result = hatchingMod.EquipPet(player, petName)
+			hatchingMod.EquipPet(player, petName)
 		else
-			result = hatchingMod.UnequipPet(player, petName)
-		end
+			local result = hatchingMod.UnequipPet(player, petName)
 
-		print(result)
-		if result then 
-			success = result
+			if result then 
+				equipPetRemote:FireClient(player, result, true)
+			end
 		end
 	end
-	
-	equipPetRemote:FireClient(player, success)
 end)

@@ -218,7 +218,7 @@ shopBtn.MouseButton1Click:Connect(function()
 			if itemSelected.Image then 
 				shopConfirmation.Position = UDim2.new(0.136, 0,1.15, 0)
 				shopConfirmation.Visible = true
-				shopConfirmation:TweenPosition(UDim2.new(0.136, 0,0.289, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Back)
+				shopConfirmation:TweenPosition(UDim2.new(0.136, 0,0.289, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Back, .5)
 
 				confirmationDesc.Text = "Purchase ".. itemName.Text.. " for ".. itemPrice.Text.. " coins?"
 				local acceptCon, denyCon
@@ -235,7 +235,7 @@ shopBtn.MouseButton1Click:Connect(function()
 						end
 
 						task.delay(.2, function()
-							local confirmationTweenOffScreen = tweenService:Create(shopConfirmation, TweenInfo.new(.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(0.136, 0,1.15, 0)})
+							local confirmationTweenOffScreen = tweenService:Create(shopConfirmation, TweenInfo.new(.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(0.136, 0,1.15, 0)})
 							confirmationTweenOffScreen:Play()
 							confirmationTweenOffScreen.Completed:Once(function()
 								shopConfirmation.Visible = false
@@ -247,7 +247,7 @@ shopBtn.MouseButton1Click:Connect(function()
 				denyCon = shopDeny.MouseButton1Click:Once(function()
 					acceptCon:Disconnect()
 
-					local confirmationTweenOffScreen = tweenService:Create(shopConfirmation, TweenInfo.new(.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(0.136, 0,1.15, 0)})
+					local confirmationTweenOffScreen = tweenService:Create(shopConfirmation, TweenInfo.new(.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(0.136, 0,1.15, 0)})
 					confirmationTweenOffScreen:Play()
 					confirmationTweenOffScreen.Completed:Once(function()
 						shopConfirmation.Visible = false
@@ -338,7 +338,7 @@ petsBtn.MouseButton1Click:Connect(function()
 						template:SetAttribute("Type", template:GetAttribute("Type"))
 						
 						local con = template.ImageButton.MouseButton1Click:Connect(function()
-							currentPetSelected = {template.Name, template}
+							currentPetSelected = template.Name
 
 							petIcon.Image = template.ImageButton.Image
 							petName.Text = template.Name
@@ -366,13 +366,7 @@ end)
 
 petEquip.MouseButton1Click:Connect(function()
 	if currentPetSelected then 
-		equipPetRemote:FireServer(currentPetSelected[1], true)
-
-		equipPetRemote.OnClientEvent:Once(function(result)
-			if result then 
-				currentPetSelected[2]:SetAttribute("Equipped", true)
-			end
-		end)
+		equipPetRemote:FireServer(currentPetSelected, true)
 	end
 end)
 
@@ -380,21 +374,18 @@ local petsFolder = game:GetService("ReplicatedStorage").Pets
 local spawnedInPets = workspace:WaitForChild("PlayerPets")
 
 petUnequip.MouseButton1Click:Connect(function()
-	if currentPetSelected and currentPetSelected[2]:GetAttribute("Equipped") then 
-		equipPetRemote:FireServer(currentPetSelected[1], false)
+	if currentPetSelected then 
+		equipPetRemote:FireServer(currentPetSelected, false)
 	end
 end)
 
-equipPetRemote.OnClientEvent:Connect(function(result)
-	print(result)
-	if result then 
-		if currentPetSelected then 
-			currentPetSelected[2]:SetAttribute("Equipped", nil)
-		end
+local workspacePets = workspace:WaitForChild("PlayerPets")
 
-		local foundPet = petsFolder:FindFirstChild(result, true)
-		local serverPet = spawnedInPets:FindFirstChild(player.Name):FindFirstChild(result)
+equipPetRemote.OnClientEvent:Connect(function(result, didUnequip)
+	local foundPet = workspacePets:FindFirstChild(result, true)
+	local serverPet = spawnedInPets:FindFirstChild(player.Name):FindFirstChild(result)
 
+	if not didUnequip then
 		if foundPet and serverPet and #spawnedInPets[player.Name]:GetChildren() < 3 then 
 			foundPet = foundPet:Clone()
 			foundPet.Parent = serverPet.Parent
@@ -402,8 +393,13 @@ equipPetRemote.OnClientEvent:Connect(function(result)
 			foundPet.PrimaryPart.AlignOrientation.Attachment1 = character.HumanoidRootPart.RootAttachment
 			serverPet:Destroy()
 		end
+	else
+		if foundPet then
+			foundPet:Destroy()
+		end
 	end
 end)
+
 
 character.Humanoid.Died:Connect(function()
 	local serverPets = spawnedInPets:FindFirstChild(player.Name)
