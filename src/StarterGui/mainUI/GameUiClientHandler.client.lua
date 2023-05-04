@@ -1,3 +1,5 @@
+game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
+
 local ui = script.Parent
 local events = game:GetService("ReplicatedStorage"):WaitForChild("Events")
 local shopBuyRemote = events:WaitForChild("Gameplay"):WaitForChild("ItemShopPurchase")
@@ -463,63 +465,44 @@ local function len(t)
 	return toReturn
 end
 
+local equipItemEvent = events.Gameplay.EquipItem
+
 local function loadInv()
-	local seven = 0
-	seven += 1
-	print(seven)
 	local playerInv = player.GameData.Inventory
 	local decoded = http:JSONDecode(playerInv.Value)
 
 	local currentIndex = decoded[inventoryCurrentTab]
 	
-	if currentIndex and inventoryCurrentTab ~= invOldTab then
-		seven += 1
-		print(seven)
-		for _, oldBtn in invButtonHolder:GetChildren() do 
-			seven += 1
-			print(seven)
-			if oldBtn:IsA("GuiButton") then
-				oldBtn:Destroy()
-				seven += 1
-				print(seven)
-			end
+	for _, oldBtn in invButtonHolder:GetChildren() do 
+		if oldBtn:IsA("GuiButton") then
+			oldBtn:Destroy()
 		end
-		seven += 1
-		print(seven)
- 		for itemName, itemAmt in currentIndex do
-			local foundItem = models:FindFirstChild(itemName, true)
-			seven += 1
-			print(seven)
-			if foundItem then
-				seven += 1
-				print(seven)
-				for _ = 1, itemAmt, 1 do
-					local temp = invTemplate:Clone()
-					temp.Name = foundItem.Name
-					temp.Image = foundItem:GetAttribute("ShopIcon")
-					temp.Parent = invButtonHolder
-					seven += 1
-					print(seven)
-					if inventoryCurrentTab ~= "Potions" then
-						invConnections[len(invConnections) + 1] = temp.MouseButton1Click:Connect(function()
-							local foundCat = invEquipment:FindFirstChild(inventoryCurrentTab)
-							seven += 1
-							print(seven)
-							print(foundCat)
-							if foundCat then
-								seven += 1
-							print(seven)
-								--fire to server execute server coedf
-								foundCat.Image = temp.Image	
-							end
-						end)
-					end
+	end
+	for itemName, itemAmt in currentIndex do
+		local foundItem = models:FindFirstChild(itemName, true)
+		if foundItem then
+			for _ = 1, itemAmt, 1 do
+				local temp = invTemplate:Clone()
+				temp.Name = foundItem.Name
+				temp.Image = foundItem:GetAttribute("ShopIcon")
+				temp.Parent = invButtonHolder
+				if inventoryCurrentTab ~= "Potions" then
+					invConnections[len(invConnections) + 1] = temp.MouseButton1Click:Connect(function()
+						local foundCat = invEquipment:FindFirstChild(inventoryCurrentTab)
+						print(foundCat)
+						if foundCat then
+							equipItemEvent:FireServer(foundItem.Name)
+
+							equipItemEvent.OnClientEvent:Once(function(result)
+								if result then 
+									foundCat.Image = temp.Image
+								end
+							end)
+						end
+					end)
 				end
 			end
-		end
-		seven += 1
-		print(seven)
-		invOldTab = inventoryCurrentTab
+		end 
 	end
 end
 
@@ -531,10 +514,13 @@ invBtn.MouseButton1Click:Connect(function()
 end)
 
 for _, btn in invCategories do 
-	if btn:IsA("GuiButton") then 
-		btn.MouseButton1Click:Connect(function()
+		if btn:IsA("GuiButton") then 
+			btn.MouseButton1Click:Connect(function()
 			inventoryCurrentTab = btn.Name
-			loadInv()
+				
+			if btn.Name ~= invOldTab then
+				loadInv()
+			end
 		end)
 	end
 end

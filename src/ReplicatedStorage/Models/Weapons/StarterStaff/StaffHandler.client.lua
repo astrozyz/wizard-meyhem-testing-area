@@ -17,19 +17,21 @@ local weaponEvents = events:WaitForChild("Weapons")
 local swingEvent = weaponEvents:WaitForChild("SwingEvent")
 local useAbility = weaponEvents:WaitForChild("UseAbility")
 
-staff.Activated:Connect(function()
-	if canAttack then
-		swingEvent:FireServer(mouse.Target)
-		
-		swingEvent.OnClientEvent:Once(function(result)
-			if result == true then 
-				canAttack = false
-				table.insert(_G.Cooldowns, {os.clock(), attackSpeed, function() canAttack = true end})
-				swingAnimation:Play()
-			end
-		end)
+local function attack(_, inputState)
+	if inputState == Enum.UserInputState.Begin then
+		if canAttack then
+			swingEvent:FireServer(mouse.Target)
+			
+			swingEvent.OnClientEvent:Once(function(result)
+				if result == true then 
+					canAttack = false
+					table.insert(_G.Cooldowns, {os.clock(), attackSpeed, function() canAttack = true end})
+					swingAnimation:Play()
+				end
+			end)
+		end
 	end
-end)
+end
 
 local function abilityFunc(name, inputState)
 	if inputState == Enum.UserInputState.Begin then
@@ -38,12 +40,14 @@ local function abilityFunc(name, inputState)
 end
 
 staff.Equipped:Connect(function()
-	context:BindAction("Ability", abilityFunc, true, Enum.KeyCode.E)
+	context:BindAction("Ability", abilityFunc, false, Enum.KeyCode.E)
 	context:SetTitle("Ability", "Ability")
+	context:BindAction("Attack", attack, false, Enum.KeyCode.F)
 end)
 
 staff.Unequipped:Connect(function()
 	context:UnbindAction("Ability")
+	context:UnbindAction("Attack")
 end)
 
 useAbility.OnClientEvent:Connect(function(result)

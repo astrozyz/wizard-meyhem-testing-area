@@ -5,6 +5,7 @@ local http = game:GetService("HttpService")
 local zone = zoneModule.new(sellFolder)
 
 local purchaseEvent = game:GetService("ReplicatedStorage").Events.Gameplay.ItemShopPurchase
+local equipItemEvent = game:GetService("ReplicatedStorage").Events.Gameplay.EquipItem
 
 zone.playerEntered:Connect(function(player)
 	local leaderstats = player.leaderstats
@@ -54,4 +55,23 @@ purchaseEvent.OnServerEvent:Connect(function(player, itemName)
 	end
 
 	purchaseEvent:FireClient(player, result)
+end)
+
+equipItemEvent.OnServerEvent:Connect(function(player, itemName)
+	local foundItem = models:FindFirstChild(itemName, true)
+	local success
+
+	if foundItem then 
+		local playerInventory = http:JSONDecode(player.GameData.Inventory.Value)
+
+		if playerInventory[foundItem.Parent.Name][foundItem.Name] > 0 then
+			if foundItem:IsA("Tool") then 
+				local old = player.Character:FindFirstChildOfClass("Tool")
+				if old then old:Destroy() end
+				foundItem:Clone().Parent = player.Character
+				success = true
+			end
+		end
+	end
+	equipItemEvent:FireClient(player, success)
 end)

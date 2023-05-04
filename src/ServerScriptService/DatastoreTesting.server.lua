@@ -3,11 +3,12 @@ local http = game:GetService("HttpService")
 
 local datastores = {
     Leaderstats = {datastoreService:GetDataStore("Leaderstats"), {Mana = 0, Money = 10000}},
-    Inventory = {datastoreService:GetDataStore("Inventory"), {Weapons = {}, Potions = {}, Armor = {}}},
+    Inventory = {datastoreService:GetDataStore("Inventory"), {Weapons = {StarterStaff = 1}, Potions = {}, Armor = {}}},
     EquippedPets = {datastoreService:GetDataStore("EquippedPets"), {}},
     Pets = {datastoreService:GetDataStore("Pets"), {}},
     DailyRewards = {datastoreService:GetDataStore("DailyRewards"), {CurrentLogin = 0, LoginStreak = 0}},
-    Levels = {datastoreService:GetDataStore("Levels"), {Level = 1, XP = 0}}
+    Levels = {datastoreService:GetDataStore("Levels"), {Level = 1, XP = 0}},
+    PlayerSetup = {datastoreService:GetDataStore("PlayerSetup"), {Weapon = "StarterStaff", Ability1 = " ", Ability2 = "", EquippedArmor = ""}}
 }
 
 local playerTemplate = game:GetService("ServerStorage").PlayerTemplate
@@ -15,6 +16,7 @@ local dailyRewards = {10, 20, 30, 40, 50, 60, 125}
 local characterAddedCons = {} 
 local eggModule = require(game:GetService("ServerScriptService").CoreScripts.Gameplay.HatchingModule)
 local equipPetRemote = game.ReplicatedStorage.Events.Gameplay.EquipPet
+local gameModels = game:GetService("ReplicatedStorage").Models
 
 local function convertToTable(data, defaultData)
     local tempData
@@ -112,6 +114,8 @@ game.Players.PlayerAdded:Connect(function(player)
     gameData.EquippedPets.Value = convertToJSON(loadedData.EquippedPets, datastores.EquippedPets[2])
     gameData.Inventory.Value = convertToJSON(loadedData.Inventory, datastores.Inventory[2])
     gameData.Pets.Value = convertToJSON(loadedData.Pets, datastores.Pets[2])
+    gameData.PlayerSetup.Value = convertToJSON(loadedData.PlayerSetup, datastores.PlayerSetup[2])
+    print(convertToJSON(loadedData.PlayerSetup, datastores.PlayerSetup[2]))
 
     dailyLoginReward(player, loadedData, plrFolder)
 
@@ -131,10 +135,46 @@ game.Players.PlayerAdded:Connect(function(player)
 
     if player.Character then
         loadPets(player)
+        local playerEquippedItems = loadedData.PlayerSetup
+
+        if playerEquippedItems.Weapon then 
+            local foundStaff = gameModels:FindFirstChild(playerEquippedItems.Weapon, true)
+
+            if foundStaff then 
+                foundStaff:Clone().Parent = player.Character
+            end
+        end
     end
 
-    characterAddedCons[player.Name] = player.CharacterAppearanceLoaded:Connect(function()
+    local firstTime = true
+
+    characterAddedCons[player.Name] = player.CharacterAppearanceLoaded:Connect(function(char)
+        print(0)
         loadPets(player)
+        local playerEquippedItems
+
+        print(1)
+        if firstTime then 
+            firstTime = false
+            playerEquippedItems = loadedData.PlayerSetup
+            print(2)
+        else
+            
+        print(3)
+            playerEquippedItems = convertToTable(gameData.PlayerSetup.Value, datastores.PlayerSetup[2])
+        end
+
+        if playerEquippedItems.Weapon then 
+            
+        print(4)
+            local foundStaff = gameModels:FindFirstChild(playerEquippedItems.Weapon, true)
+
+            if foundStaff then 
+                foundStaff:Clone().Parent = char
+                
+                   print(5)
+            end
+        end
     end)
 end)
 
@@ -153,7 +193,8 @@ local function saveData(player)
         EquippedPets = convertToTable(gameData.EquippedPets.Value, datastores.EquippedPets[2]),
         Pets = convertToTable(gameData.Pets.Value, datastores.Pets[2]),
         DailyRewards = {CurrentLogin = player:GetAttribute("LastLogin"), LoginStreak = player:GetAttribute("LoginStreak")},
-        Levels = {Level = player:GetAttribute("Level"), XP = player:GetAttribute("LoginStreak")}
+        Levels = {Level = player:GetAttribute("Level"), XP = player:GetAttribute("LoginStreak")},
+        PlayerSetup = convertToTable(gameData.PlayerSetup.Value, datastores.PlayerSetup[2])
     }
 
     for name, data in dataTable do
