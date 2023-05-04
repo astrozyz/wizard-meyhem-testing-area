@@ -126,16 +126,24 @@ game.Players.PlayerAdded:Connect(function(player)
         v.Parent = player
     end
 
+    local playerPetsFolder = Instance.new("Folder", workspace.PlayerPets)
+    playerPetsFolder.Name = player.Name
+
     if player.Character then
         loadPets(player)
     end
 
-    characterAddedCons[player.Name] = player.CharacterAdded:Connect(function()
+    characterAddedCons[player.Name] = player.CharacterAppearanceLoaded:Connect(function()
         loadPets(player)
     end)
 end)
 
 local function saveData(player)
+    local playerPetsFolder = workspace.PlayerPets:FindFirstChild(player.Name)
+    if playerPetsFolder then 
+        playerPetsFolder:Destroy()
+    end
+
     local gameData = player.GameData
     local leaderstats = player.leaderstats
 

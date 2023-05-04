@@ -118,19 +118,42 @@ end
 
 local playerPetsFolder = workspace.PlayerPets
 
+local function checkIfCanEquip(player, petName)
+	local plrFolder = playerPetsFolder:FindFirstChild(player.Name)
+	local found = 0
+
+	for _, pet in plrFolder:GetChildren() do 
+		print(pet.Name, petName)
+		if pet.Name == petName then 
+			found += 1
+		end
+	end
+
+
+	local plrOwnedPets = player.GameData.Pets
+	local decoded = http:JSONDecode(plrOwnedPets.Value)
+
+	print(found, decoded[petName], found - decoded[petName])
+	if math.abs(found - decoded[petName]) > 0 then 
+		return true
+	else
+		return false
+	end
+end
+
 function module.EquipPet(player, petName, isLoading)
 	local foundPet = petsFolder:FindFirstChild(petName, true)
 
 	if foundPet then 
-		print("sdhfusdfh")
+		local result = checkIfCanEquip(player, petName)
+		if result then
+			print("sdhfusdfh")
 		local character = player.character
 
 		if character and character.Humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
 			print("sdjfosd")
 			local pet = foundPet:Clone()
-			local playerFolder = playerPetsFolder:FindFirstChild(player.Name) or Instance.new("Folder", playerPetsFolder)
-			playerFolder.Name = player.Name
-			print(playerFolder, playerFolder.Name, playerFolder.Parent)
+			local playerFolder = playerPetsFolder:FindFirstChild(player.Name)
 
 			local alignPos : AlignPosition, alignOrient : AlignOrientation = pet.PrimaryPart.AlignPosition, pet.PrimaryPart.AlignOrientation
 
@@ -157,6 +180,7 @@ function module.EquipPet(player, petName, isLoading)
 			
 			return foundPet.Name
 		end
+		end
 	end
 end
 
@@ -168,11 +192,14 @@ function module.UnequipPet(player, petName)
 	local decoded = http:JSONDecode(equippedPets.Value)
 	local foundPet = workspacePets[player.Name]:FindFirstChild(petName)
 
-	if table.find(decoded, petName) and foundPet then 
+	if table.find(decoded, petName) and foundPet then
+		print("Found")
 		table.remove(decoded, table.find(decoded, petName))
 		equippedPets.Value = http:JSONEncode(decoded)
 		foundPet:Destroy()
-		return true
+		return petName
+	else
+		print(foundPet, petName, decoded)
 	end
 end
 

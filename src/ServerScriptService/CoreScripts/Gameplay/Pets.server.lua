@@ -29,6 +29,7 @@ equipPetRemote.OnServerEvent:Connect(function(player, petName, equip)
 			hatchingMod.EquipPet(player, petName)
 		else
 			local result = hatchingMod.UnequipPet(player, petName)
+			print(result)
 
 			if result then 
 				equipPetRemote:FireClient(player, result, true)
