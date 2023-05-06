@@ -4,12 +4,13 @@ local useAbility = game.ReplicatedStorage.Events.Weapons.UseAbility
 local zoneModule = require(game.ServerScriptService.CoreScripts.Zone)
 
 local runService = game:GetService("RunService")
+local tweenService = game:GetService("TweenService")
+local debris = game:GetService("Debris")
 
-function module.StarterStaff(player, character, staff)
-	local gameData = player.GameData
-		if os.clock() - player:GetAttribute("LastAbility") >= staff:GetAttribute("AbilitySpeed") and not player:GetAttribute("CanAbility") then
-		print("is running")
-		useAbility:FireClient(player, true)
+local abilityItems = game:GetService("ReplicatedStorage").Models.Abilities
+
+function module.Ability1(player, character, staff, abilityNum)
+	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
 		player:SetAttribute("CanAbility", true)
 
 		local hbPart = Instance.new("Part")
@@ -59,9 +60,9 @@ function module.StarterStaff(player, character, staff)
 				end
 			end
 		end)
-		
+
 		local exited
-		
+
 		exited = hb.partExited:Connect(function(part)
 			local possibleCharacter = part:FindFirstAncestorOfClass("Model")
 			if possibleCharacter and table.find(toAttack, possibleCharacter) then
@@ -88,16 +89,107 @@ function module.StarterStaff(player, character, staff)
 				end
 			end
 		end)
-		
+
 		task.delay(8, function()
 			renderstepped:Disconnect()
 			exited:Disconnect()
 			entered:Disconnect()
 			toAttack = {}
 			hb:Destroy()
-			
-			player:SetAttribute("LastAbility", os.clock())
+
+			player:SetAttribute("LastAbility".. abilityNum, os.clock())
 			player:SetAttribute("CanAbility", nil)
+
+			useAbility:FireClient(player, "Ability".. abilityNum)
+		end)
+	end
+end
+
+function module.Ability2(player, character, staff, abilityNum)
+	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
+		player:SetAttribute("CanAbility", true)
+		local abilityAssets = abilityItems.TestAbility1
+
+		local firstVisual = abilityAssets.Visual:Clone()
+		local firstHbPart = abilityAssets.Hitbox:Clone()
+
+		firstVisual.Beam.Attachment1 = character.HumanoidRootPart.RootAttachment
+		firstVisual:PivotTo(character:GetPivot())
+		firstVisual.Parent = workspace
+
+		local visualPosition = character:GetPivot() * CFrame.new(0,10,-10)
+
+		local visualTweenUp = tweenService:Create(firstVisual, TweenInfo.new(1.5), {CFrame = visualPosition})
+		visualTweenUp:Play()
+
+		visualTweenUp.Completed:Once(function()
+			firstVisual.Beam.Attachment1 = nil
+			firstHbPart.Parent = workspace
+			firstHbPart:PivotTo(visualPosition)
+
+			local firstDetection = zoneModule.new(firstHbPart)
+
+			local allParts = firstDetection:getParts()
+			local toAttack = {}
+			local renderstepped
+
+			for _, part in allParts do 
+				local foundCharacter = part:FindFirstAncestorOfClass("Model")
+
+				if foundCharacter and foundCharacter:FindFirstChildOfClass("Humanoid") and foundCharacter ~= character and not table.find(toAttack, foundCharacter) then
+					table.insert(toAttack, foundCharacter)
+				end
+			end
+
+			local entered, exited
+
+			entered = firstDetection.partEntered:Connect(function(part)
+				local foundCharacter = part:FindFirstAncestorOfClass("Model")
+
+				if foundCharacter and foundCharacter:FindFirstChildOfClass("Humanoid") and foundCharacter ~= character and not table.find(toAttack, foundCharacter) then 
+					table.insert(toAttack, foundCharacter)
+				end
+			end)
+
+			exited = firstDetection.partExited:Connect(function(part)
+				local foundCharacter = part:FindFirstAncestorOfClass("Model")
+
+				if foundCharacter and foundCharacter:FindFirstChildOfClass("Humanoid") and foundCharacter ~= character and table.find(toAttack, foundCharacter) then 
+					table.remove(toAttack, table.find(toAttack, foundCharacter))
+				end
+			end)
+
+			local lastTime = 0
+			renderstepped = runService.Heartbeat:Connect(function()
+				if os.clock() - lastTime >= 1 then
+					lastTime = os.clock()
+
+					for _, model in toAttack do
+						model.Humanoid:TakeDamage(15)
+
+						local newBeam = firstVisual.Beam:Clone()
+						newBeam.Attachment1 = model.HumanoidRootPart.RootRigAttachment
+						newBeam.Attachment0 = firstVisual.Attachment
+						debris:AddItem(newBeam, .5)
+						newBeam.Parent = firstVisual
+					end
+				end
+			end)
+
+			task.delay(5, function()
+				renderstepped:Disconnect()
+				entered:Disconnect()
+				exited:Disconnect()
+				firstVisual:Destroy()
+				firstDetection:destroy()
+				firstHbPart:Destroy()
+				toAttack = {}
+
+				player:SetAttribute("LastAbility".. abilityNum, os.clock())
+				player:SetAttribute("CanAbility", nil)
+
+				useAbility:FireClient(player, "Ability".. abilityNum)
+			end)
 		end)
 	end
 end

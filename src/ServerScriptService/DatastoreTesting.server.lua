@@ -8,7 +8,7 @@ local datastores = {
     Pets = {datastoreService:GetDataStore("Pets"), {}},
     DailyRewards = {datastoreService:GetDataStore("DailyRewards"), {CurrentLogin = 0, LoginStreak = 0}},
     Levels = {datastoreService:GetDataStore("Levels"), {Level = 1, XP = 0}},
-    PlayerSetup = {datastoreService:GetDataStore("PlayerSetup"), {Weapon = "StarterStaff", Ability1 = " ", Ability2 = "", EquippedArmor = ""}}
+    PlayerSetup = {datastoreService:GetDataStore("PlayerSetup"), {Weapon = "StarterStaff", Ability1 = "Ability1", Ability2 = "Ability2", EquippedArmor = ""}}
 }
 
 local playerTemplate = game:GetService("ServerStorage").PlayerTemplate
@@ -119,7 +119,8 @@ game.Players.PlayerAdded:Connect(function(player)
 
     dailyLoginReward(player, loadedData, plrFolder)
 
-    player:SetAttribute("LastAbility", 0)
+    player:SetAttribute("LastAbility1", 0)
+    player:SetAttribute("LastAbility2", 0)
 	player:SetAttribute("LastSwung", 0)
     player:SetAttribute("XP", loadedData.Levels.XP or 0)
 	player:SetAttribute("Level", loadedData.Levels.Level or 1)
@@ -149,30 +150,23 @@ game.Players.PlayerAdded:Connect(function(player)
     local firstTime = true
 
     characterAddedCons[player.Name] = player.CharacterAppearanceLoaded:Connect(function(char)
-        print(0)
         loadPets(player)
         local playerEquippedItems
 
-        print(1)
         if firstTime then 
             firstTime = false
             playerEquippedItems = loadedData.PlayerSetup
-            print(2)
         else
             
-        print(3)
             playerEquippedItems = convertToTable(gameData.PlayerSetup.Value, datastores.PlayerSetup[2])
         end
 
         if playerEquippedItems.Weapon then 
             
-        print(4)
             local foundStaff = gameModels:FindFirstChild(playerEquippedItems.Weapon, true)
 
             if foundStaff then 
                 foundStaff:Clone().Parent = char
-                
-                   print(5)
             end
         end
     end)

@@ -7,6 +7,8 @@ runService.Heartbeat:Connect(function()
 		if os.clock() - cd[1] >= cd[2] then
 			cd[3]()
 			table.remove(_G.Cooldowns, i)
+		elseif os.clock() - cd[1] <= cd[2] and cd[4] then 
+			cd[4]()
 		end
 	end
 end)

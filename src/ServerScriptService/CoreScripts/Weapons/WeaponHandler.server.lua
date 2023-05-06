@@ -1,3 +1,4 @@
+local HttpService = game:GetService("HttpService")
 local events = game.ReplicatedStorage.Events.Weapons
 local swingEvent = events.SwingEvent
 local useAbility = events.UseAbility
@@ -39,18 +40,25 @@ swingEvent.OnServerEvent:Connect(function(player, mouseTarget : Part)
 	end
 end)
 
-useAbility.OnServerEvent:Connect(function(player)
+useAbility.OnServerEvent:Connect(function(player, abilityName, abilityNum)
 	local character = player.Character
+	local success
 	
 	if character and character.Humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
 		local staff = character:FindFirstChildOfClass("Tool")
 		
 		if staff then 
-			local func = abilities[staff.Name]
+			local func = abilities[abilityName]
 			
 			if func then
-				func(player, character, staff)
+				local plrSetup = player.GameData.PlayerSetup.Value
+
+				if plrSetup:match(abilityName) then 
+					func(player, character, staff, abilityNum)
+					success = abilityName
+				end
 			end
 		end
 	end
+	useAbility:FireClient(player, nil, success)
 end)
