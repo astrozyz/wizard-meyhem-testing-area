@@ -32,6 +32,9 @@ local ability2Ui = toolbar:WaitForChild("Ability2")
 local canAbility1 = true 
 local canAbility2 = true
 
+local ability1Name = "Ability1"
+local ability2Name = "IceMeteor"
+
 local function cooldownVisualizer(speed, typ, ui)
 	local timeStarted = os.clock()
 	table.insert(_G.Cooldowns, {timeStarted, speed, function() if typ then canAttack = true end; ui.CooldownText.Visible = false end, function()
@@ -74,7 +77,7 @@ local function ability1Func(name, inputState)
 			if not canAbility1 then return end
 		end
 			
-		useAbility:FireServer(name, 1)
+		useAbility:FireServer(name, 1, mouse.Hit.Position)
 
 		useAbility.OnClientEvent:Connect(function(_, result)
 			if result == name then 
@@ -83,8 +86,8 @@ local function ability1Func(name, inputState)
 				ability1Animation:Play()
 				ability1Ui.UIGradient.Offset = cooldownBeginning
 				ability1Ui.UIGradient.Enabled = true 
-				context:UnbindAction("Ability1")
-				context:UnbindAction("Ability2")
+				context:UnbindAction(ability1Name)
+				context:UnbindAction(ability2Name)
 			end
 		end)
 	end
@@ -95,7 +98,7 @@ local function ability2Func(name, inputState)
 		if uis.TouchEnabled then 
 			if not canAbility2 then return end
 		end
-		useAbility:FireServer(name, 2)
+		useAbility:FireServer(name, 2, mouse.Hit.Position)
 
 		useAbility.OnClientEvent:Connect(function(_, result)
 			if result == name then 
@@ -104,16 +107,16 @@ local function ability2Func(name, inputState)
 				ability2Animation:Play()
 				ability2Ui.UIGradient.Offset = cooldownBeginning
 				ability2Ui.UIGradient.Enabled = true 
-				context:UnbindAction("Ability1")
-				context:UnbindAction("Ability2")
+				context:UnbindAction(ability1Name)
+				context:UnbindAction(ability2Name)
 			end
 		end)
 	end
 end
 
 staff.Equipped:Connect(function()
-	context:BindAction("Ability1", ability1Func, false, Enum.KeyCode.E)
-	context:BindAction("Ability2", ability2Func, false, Enum.KeyCode.Q)
+	context:BindAction(ability1Name, ability1Func, false, Enum.KeyCode.E)
+	context:BindAction(ability2Name, ability2Func, false, Enum.KeyCode.Q)
 	canAbility2 = true 
 	canAbility1 = true
 	
@@ -121,34 +124,34 @@ staff.Equipped:Connect(function()
 end)
 
 staff.Unequipped:Connect(function()
-	context:UnbindAction("Ability1")
-	context:UnbindAction("Ability2")
+	context:UnbindAction(ability1Name)
+	context:UnbindAction(ability2Name)
 	context:UnbindAction("Attack")
 end)
 
 useAbility.OnClientEvent:Connect(function(result)
 	if result then
-		if result == "Ability1" then 
+		if result == ability1Name then 
 			cooldownVisualizer(staff:GetAttribute("Ability1Speed"), false, ability1Ui)
-			context:BindAction("Ability2", ability2Func, false, Enum.KeyCode.Q)
+			context:BindAction(ability2Name, ability2Func, false, Enum.KeyCode.Q)
 			canAbility2 = true
-			table.insert(_G.Cooldowns, {os.clock(), ability1Speed, function() context:BindAction("Ability1", ability1Func, false, Enum.KeyCode.E); canAbility1 = true end})
-		elseif result == "Ability2" then
+			table.insert(_G.Cooldowns, {os.clock(), ability1Speed, function() context:BindAction(ability1Name, ability1Func, false, Enum.KeyCode.E); canAbility1 = true end})
+		elseif result == ability2Name then
 			cooldownVisualizer(staff:GetAttribute("Ability2Speed"), false, ability2Ui)
-			context:BindAction("Ability1", ability1Func, false, Enum.KeyCode.E)
+			context:BindAction(ability1Name, ability1Func, false, Enum.KeyCode.E)
 			canAbility1 = true
-			table.insert(_G.Cooldowns, {os.clock(), ability2Speed, function() context:BindAction("Ability2", ability2Func, false, Enum.KeyCode.Q); canAbility2 = true end})
+			table.insert(_G.Cooldowns, {os.clock(), ability2Speed, function() context:BindAction(ability2Name, ability2Func, false, Enum.KeyCode.Q); canAbility2 = true end})
 		end
 	end
 end)
 
 if uis.TouchEnabled then 
 	ability1Ui.Icon.MouseButton1Click:Connect(function()
-		ability1Func("Ability1", Enum.UserInputState.Begin)
+		ability1Func(ability1Name, Enum.UserInputState.Begin)
 	end)
 
 	ability2Ui.Icon.MouseButton1Click:Connect(function()
-		ability2Func("Ability2", Enum.UserInputState.Begin)
+		ability2Func(ability2Name, Enum.UserInputState.Begin)
 	end)
 
 	staff.Activated:Connect(function()
