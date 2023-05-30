@@ -23,7 +23,7 @@ local abilityStats = {
 	},
 	IceMeteor = {
 		Damage = 35,
-		ProjectileSpeed = 120,
+		ProjectileSpeed = 100,
 		Delay = .5,
 		MaxRange = 300
 	}
@@ -217,7 +217,7 @@ function module.Ability2(player, character, staff, abilityNum)
 	end
 end
 
-fastCast.VisualizeCasts = true
+fastCast.VisualizeCasts = false
 
 function module.IceMeteor(player, character, staff, abilityNum, mousePos)
 	local iceStats = abilityStats.IceMeteor
@@ -229,20 +229,13 @@ function module.IceMeteor(player, character, staff, abilityNum, mousePos)
 	local behavior = fastCast.newBehavior()
 	behavior.RaycastParams = rayParams
 	behavior.MaxDistance = iceStats.MaxRange
-	behavior.Acceleration = Vector3.zero
 	behavior.CosmeticBulletTemplate = abilityItems.IceMeteor.Hitbox
 
-	caster:Fire(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position).Unit, iceStats.MaxRange, behavior)
+	caster:Fire(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position).Unit * iceStats.MaxRange, iceStats.ProjectileSpeed, behavior)
 
 	local bullet
-	local first
 
-	caster.LengthChanged:Connect(function(activeCast, lastPoint, rayDir, displacement, _, cosmeticBulletObject)
-		if not first then
-			first = true
-			activeCast:AddVelocity(cosmeticBulletObject.CFrame.LookVector + Vector3.new(0,0, iceStats.ProjectileSpeed))
-		end
-		
+	caster.LengthChanged:Connect(function(activeCast, lastPoint, rayDir, displacement, _, cosmeticBulletObject)		
 		cosmeticBulletObject.Parent = workspace
 		local blength = cosmeticBulletObject.Size.Z/2
 		local offset = CFrame.new(0,0,-(displacement-blength))
