@@ -3,6 +3,9 @@ local module = {}
 local useAbility = game.ReplicatedStorage.Events.Weapons.UseAbility
 local zoneModule = require(game.ServerScriptService.CoreScripts.Zone)
 
+local Debris = game:GetService("Debris")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local runService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
 local tweenService = game:GetService("TweenService")
@@ -11,6 +14,8 @@ local debris = game:GetService("Debris")
 local abilityItems = ServerStorage.AbilityAssets
 
 local fastCast = require(script.Parent.FastCastRedux)
+
+local grabMousePos = ReplicatedStorage.Events.Weapons.GetMousePos
 
 local abilityStats = {
 	Ability1 = {
@@ -219,7 +224,7 @@ end
 
 fastCast.VisualizeCasts = false
 
-function module.IceMeteor(player, character, staff, abilityNum, mousePos)
+function module.IceMeteor(player, character, staff, abilityNum)
 	local iceStats = abilityStats.IceMeteor
 	local caster = fastCast.new()
 	local rayParams = RaycastParams.new()
@@ -231,20 +236,72 @@ function module.IceMeteor(player, character, staff, abilityNum, mousePos)
 	behavior.MaxDistance = iceStats.MaxRange
 	behavior.CosmeticBulletTemplate = abilityItems.IceMeteor.Hitbox
 
-	caster:Fire(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position).Unit * iceStats.MaxRange, iceStats.ProjectileSpeed, behavior)
+	for i = 1, 2, 1 do
+		grabMousePos:FireClient(player)
+		
+		local grabConnection
+		grabConnection = grabMousePos.OnServerEvent:Connect(function(p, mousePos)
+			if p == player and mousePos then
+				grabConnection:Disconnect()
 
-	local bullet
+				caster:Fire(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position), iceStats.ProjectileSpeed, behavior)
 
-	caster.LengthChanged:Connect(function(activeCast, lastPoint, rayDir, displacement, _, cosmeticBulletObject)		
-		cosmeticBulletObject.Parent = workspace
-		local blength = cosmeticBulletObject.Size.Z/2
-		local offset = CFrame.new(0,0,-(displacement-blength))
-		cosmeticBulletObject.CFrame = CFrame.lookAt(lastPoint, lastPoint+rayDir):ToWorldSpace(offset)
+				local bullet
 
-		bullet = cosmeticBulletObject
-	end)
+				local lengthChanged = caster.LengthChanged:Connect(function(activeCast, lastPoint, rayDir, displacement, _, cosmeticBulletObject)		
+					cosmeticBulletObject.Parent = workspace
+					local blength = cosmeticBulletObject.Size.Z/2
+					local offset = CFrame.new(0,0,-(displacement-blength))
+					cosmeticBulletObject.CFrame = CFrame.lookAt(lastPoint, lastPoint+rayDir):ToWorldSpace(offset)
 
-	useAbility:FireClient(player, "IceMeteor")
+					bullet = cosmeticBulletObject
+				end)
+
+				local rayHit
+				local terminated
+
+				rayHit = caster.RayHit:Connect(function(_, result, _, cosmeticBulletObject)
+					for _, v in cosmeticBulletObject:GetDescendants() do
+						if v:IsA("ParticleEmitter") then
+							v.Enabled = false
+						end
+					end
+
+					Debris:AddItem(cosmeticBulletObject, 2)
+
+					if result and result.Instance then
+						local foundModel = result.Instance:FindFirstAncestorOfClass("Model")
+
+						if foundModel then
+							foundModel.Humanoid:TakeDamage(iceStats.Damage)
+						end
+					end
+
+					rayHit:Disconnect()
+					lengthChanged:Disconnect()
+					terminated:Disconnect()
+				end)
+
+				terminated = caster.CastTerminating:Connect(function()
+					for _, v in bullet:GetDescendants() do
+						if v:IsA("ParticleEmitter") then
+							v.Enabled = false
+						end
+					end
+
+					Debris:AddItem(bullet, 2)
+
+					rayHit:Disconnect()
+					lengthChanged:Disconnect()
+					terminated:Disconnect()
+				end)
+
+				task.wait(iceStats.Delay)
+			end
+
+			useAbility:FireClient(player, "IceMeteor")
+		end)
+	end
 end
 
 return module

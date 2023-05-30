@@ -21,6 +21,7 @@ local events = game.ReplicatedStorage:WaitForChild("Events")
 local weaponEvents = events:WaitForChild("Weapons")
 local swingEvent = weaponEvents:WaitForChild("SwingEvent")
 local useAbility = weaponEvents:WaitForChild("UseAbility")
+local grabMousePos = weaponEvents:WaitForChild("GetMousePos")
 
 local cooldownGoals = {Offset = Vector2.new(0, -1)}
 local cooldownBeginning = Vector2.zero
@@ -160,7 +161,6 @@ if uis.TouchEnabled then
 	end)
 end
 
---[[
-ui.UIGradient.Offset = cooldownBeginning
-ui.UIGradient.Enabled = true 
---]]
+grabMousePos.OnClientEvent:Connect(function()
+	grabMousePos:FireServer(mouse.Hit.Position)
+end)

@@ -58,7 +58,7 @@ swingEvent.OnServerEvent:Connect(function(player, mouseTarget : Part)
 	end
 end)
 
-useAbility.OnServerEvent:Connect(function(player, abilityName, abilityNum, mousePos)
+useAbility.OnServerEvent:Connect(function(player, abilityName, abilityNum)
 	local character = player.Character
 	local success
 	
@@ -72,7 +72,7 @@ useAbility.OnServerEvent:Connect(function(player, abilityName, abilityNum, mouse
 				local plrSetup = player.GameData.PlayerSetup.Value
 
 				if plrSetup:match(abilityName) then 
-					coroutine.wrap(func)(player, character, staff, abilityNum, mousePos)
+					coroutine.wrap(func)(player, character, staff, abilityNum)
 					success = abilityName
 				end
 			end
