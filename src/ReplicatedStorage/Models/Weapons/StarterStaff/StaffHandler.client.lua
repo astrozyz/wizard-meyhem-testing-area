@@ -131,6 +131,7 @@ end)
 
 useAbility.OnClientEvent:Connect(function(result)
 	if result then
+		print(result)
 		if result == ability1Name then 
 			cooldownVisualizer(staff:GetAttribute("Ability1Speed"), false, ability1Ui)
 			context:BindAction(ability2Name, ability2Func, false, Enum.KeyCode.Q)

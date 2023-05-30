@@ -4,10 +4,11 @@ local useAbility = game.ReplicatedStorage.Events.Weapons.UseAbility
 local zoneModule = require(game.ServerScriptService.CoreScripts.Zone)
 
 local runService = game:GetService("RunService")
+local ServerStorage = game:GetService("ServerStorage")
 local tweenService = game:GetService("TweenService")
 local debris = game:GetService("Debris")
 
-local abilityItems = game:GetService("ReplicatedStorage").Models.Abilities
+local abilityItems = ServerStorage.AbilityAssets
 
 local fastCast = require(script.Parent.FastCastRedux)
 
@@ -22,7 +23,7 @@ local abilityStats = {
 	},
 	IceMeteor = {
 		Damage = 35,
-		ProjectileSpeed = 700,
+		ProjectileSpeed = 120,
 		Delay = .5,
 		MaxRange = 300
 	}
@@ -216,147 +217,41 @@ function module.Ability2(player, character, staff, abilityNum)
 	end
 end
 
--- fastCast.VisualizeCasts = true
+fastCast.VisualizeCasts = true
 
 function module.IceMeteor(player, character, staff, abilityNum, mousePos)
-	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
-		player:SetAttribute("CanAbility", true)
-		local stats = abilityStats.IceMeteor
-
-		local iceMeteorEffect = game.ServerStorage.AbilityAssets.IceMeteor.Hitbox
-
-		local rayParams = RaycastParams.new()
-		rayParams.FilterDescendantsInstances = {character}
-		rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-
-		local behavior = fastCast.newBehavior()
-		behavior.RaycastParams = rayParams
-		behavior.MaxDistance = stats.MaxRange
-		behavior.Acceleration = Vector3.zero
-		behavior.CosmeticBulletTemplate = iceMeteorEffect
-
-		local cons = {}
-
-		for i = 1, 2, 1 do
-			local caster = fastCast.new()
-			caster:Fire(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position).Unit, stats.MaxRange, behavior)
-
-			local hitCon
-			local terminateCon
-			local lengthChanged
-			local bullet
-
-			lengthChanged = caster.LengthChanged:Connect(function(_, lastPoint, rayDir, displacement, _, cosmeticBulletObject)
-				cosmeticBulletObject.Parent = workspace
-				bullet = cosmeticBulletObject
-				local blength = cosmeticBulletObject.Size.Z/2
-				local offset = CFrame.new(0,0,-(displacement-blength))
-				cosmeticBulletObject.CFrame = CFrame.lookAt(lastPoint, lastPoint+rayDir):ToWorldSpace(offset)
-			end)
-
-			hitCon = caster.RayHit:Connect(function(_, result, _, cosmeticBulletObject)
-				for _, v in cosmeticBulletObject:GetDescendants() do
-					if v:IsA("ParticleEmitter") then
-						v.Enabled = false
-					end
-				end
-
-				debris:AddItem(cosmeticBulletObject, 2)
-				
-				if result and result.Instance then 
-					local model = result.Instance:FindFirstAncestorOfClass("Model")
-					
-					if model and model:FindFirstChildOfClass("Humanoid") then 
-						local hitHum = model.Humanoid
-						hitHum:TakeDamage(stats.Damage)
-					end
-				end
+	local iceStats = abilityStats.IceMeteor
+	local caster = fastCast.new()
+	local rayParams = RaycastParams.new()
+	rayParams.FilterDescendantsInstances = {character}
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
 	
-				local foundIndex = table.find(cons, hitCon)
-				if foundIndex then
-					table.remove(cons, foundIndex)
-				end
+	local behavior = fastCast.newBehavior()
+	behavior.RaycastParams = rayParams
+	behavior.MaxDistance = iceStats.MaxRange
+	behavior.Acceleration = Vector3.zero
+	behavior.CosmeticBulletTemplate = abilityItems.IceMeteor.Hitbox
 
-				hitCon:Disconnect()
-				terminateCon:Disconnect()
-				lengthChanged:Disconnect()
-			end)
+	caster:Fire(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position).Unit, iceStats.MaxRange, behavior)
 
-			terminateCon = caster.CastTerminating:Connect(function()
-				if bullet then
-					for _, v in bullet:GetDescendants() do
-						if v:IsA("ParticleEmitter") then
-							v.Enabled = false
-						end
-					end
-	
-					debris:AddItem(bullet, 2)
-				end
+	local bullet
+	local first
 
-				terminateCon:Disconnect()
-				hitCon:Disconnect()
-				lengthChanged:Disconnect()
-			end)
-
-			task.wait(stats.Delay)
+	caster.LengthChanged:Connect(function(activeCast, lastPoint, rayDir, displacement, _, cosmeticBulletObject)
+		if not first then
+			first = true
+			activeCast:AddVelocity(cosmeticBulletObject.CFrame.LookVector + Vector3.new(0,0, iceStats.ProjectileSpeed))
 		end
-
-		player:SetAttribute("LastAbility".. abilityNum, os.clock())
-		player:SetAttribute("CanAbility", nil)
-
-		useAbility:FireClient(player, "Ability".. abilityNum)
 		
-	end
+		cosmeticBulletObject.Parent = workspace
+		local blength = cosmeticBulletObject.Size.Z/2
+		local offset = CFrame.new(0,0,-(displacement-blength))
+		cosmeticBulletObject.CFrame = CFrame.lookAt(lastPoint, lastPoint+rayDir):ToWorldSpace(offset)
+
+		bullet = cosmeticBulletObject
+	end)
+
+	useAbility:FireClient(player, "IceMeteor")
 end
-
--- function module.IceMeteor(player, character, staff, abilityNum, mousePos)
--- 	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
--- 		player:SetAttribute("CanAbility", true)
--- 		local stats = abilityStats.IceMeteor
-
--- 		local iceMeteorEffect = game.ServerStorage.AbilityAssets.IceMeteor.Hitbox
-
--- 		local cons = {}
--- 		local zones = {}
-
--- 		for i = 1, 2, 1 do
--- 			local hitbox = iceMeteorEffect:Clone()
--- 			hitbox.Parent = workspace
-			
--- 			local zoneHb = zoneModule.new(hitbox)
--- 			table.insert(zones, zoneHb)
-
--- 			local onHit
-
--- 			onHit = zoneHb.itemEntered:Conncet(function(item)
--- 				local enemy = item:FindFirstAncestorOfClass("Model")
-
--- 				if enemy and enemy:FindFirstChildOfClass("Humanoid") then
--- 					local enemyHumanoid = enemy:FindFirstChildOfClass("Humanoid")
-
--- 					if enemyHumanoid:GetState() ~= Enum.HumanoidStateType.Dead and enemyHumanoid ~= character.Humanoid then
--- 						enemyHumanoid:TakeDamage(stats.Damage)
--- 						onHit:Disconnect()
--- 						zoneHb:destroy()
--- 						hitbox:Destroy()
--- 					end
--- 				end
--- 			end)
-
--- 			hitbox.CFrame = character.HumanoidRootPart.CFrame
--- 			runService:BindToRenderStep("IceMeteor".. i, Enum.RenderPriority.Last, function()
--- 				hitbox.CFrame = hitbox.CFrame * CFrame.new(0,0,0.3)
--- 			end)
-
--- 			task.wait(stats.Delay)
--- 		end
-
--- 		player:SetAttribute("LastAbility".. abilityNum, os.clock())
--- 		player:SetAttribute("CanAbility", nil)
-
--- 		useAbility:FireClient(player, "Ability".. abilityNum)
-		
--- 	end
--- end
 
 return module
