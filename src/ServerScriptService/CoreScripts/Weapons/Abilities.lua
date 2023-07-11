@@ -9,12 +9,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local runService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
 local tweenService = game:GetService("TweenService")
-local debris = game:GetService("Debris")
-
+local VFXFolder = workspace.Effects
 local abilityItems = ServerStorage.AbilityAssets
 
 local fastCast = require(script.Parent.FastCastRedux)
-
+local raycastHitbox = require(script.Parent.Parent.RaycastHitboxV4)
 local grabMousePos = ReplicatedStorage.Events.Weapons.GetMousePos
 
 local abilityStats = {
@@ -27,12 +26,72 @@ local abilityStats = {
 		AttackDelay = 1
 	},
 	IceMeteor = {
-		Damage = 35,
-		ProjectileSpeed = 100,
-		Delay = .5,
-		MaxRange = 300
+		Cost = 215,
+		Damage = 30,
+		Cooldown = 10,
+		Range = 50,
+		Speed = 50
+	},
+	LightningStrike = {
+		Cost = 235,
+		Damage = 90,
+		Cooldown = 12,
+		Range = 40,
+		ShockwaveRange = 20,
+		ShockDamage = 30
+	},
+	EletricOrb = {
+		Cost = 110,
+		Damage = 45,
+		Cooldown = 10,
+		Range = 20,
+		StunLength = 4,
+		Speed = 50
+	},
+	Fireball = {
+		Cost = 60,
+		Damage = 30,
+		Cooldown = 8,
+		Range = 50,
+		Speed = 50
+	},
+	Flare = {
+		Cost = 60,
+		Damage = 25,
+		BurnLength = 7,
+		Cooldown = 7,
+		Range = 15
+	},
+	MeteorSwarm = {
+		Cost = 185,
+		MeteorDamage = 50,
+		MeteorTime = 3,
+		BurningTime = 3,
+		BurningDamage = 5,
+		Range = 15
+	},
+	Blizzard = {
+		Cost = 200,
+		Damage = 65,
+		Cooldown = 10,
+		SlowTime = 4,
+		Range = 25
 	}
 }
+
+-- function module.LightningStrike(player, character, staff, abilityNum)
+-- 	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
+-- 		player:SetAttribute("CanAbility", true)
+-- 		local stats = abilityStats.Fireball
+
+
+-- 		task.delay(stats.Cooldown, function()
+-- 			player:SetAttribute("LastAbility".. abilityNum, os.clock())
+-- 			player:SetAttribute("CanAbility", nil)
+-- 			useAbility:FireClient(player, "Ability".. abilityNum)
+-- 		end)
+-- 	end
+-- end
 
 function module.Ability1(player, character, staff, abilityNum)
 	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
@@ -224,82 +283,670 @@ end
 
 fastCast.VisualizeCasts = false
 
-function module.IceMeteor(player, character, staff, abilityNum)
-	local iceStats = abilityStats.IceMeteor
-	local caster = fastCast.new()
-	local rayParams = RaycastParams.new()
-	rayParams.FilterDescendantsInstances = {character}
-	rayParams.FilterType = Enum.RaycastFilterType.Exclude
-	
-	local behavior = fastCast.newBehavior()
-	behavior.RaycastParams = rayParams
-	behavior.MaxDistance = iceStats.MaxRange
-	behavior.CosmeticBulletTemplate = abilityItems.IceMeteor.Hitbox
+--LightningStrike
+function module.a(player, character, staff, abilityNum)
+	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
+		player:SetAttribute("CanAbility", true)
+		local strike = abilityStats.LightningStrike
 
-	for i = 1, 2, 1 do
+		local rayParams = RaycastParams.new()
+		rayParams.FilterDescendantsInstances = {character, VFXFolder}
+		rayParams.FilterType = Enum.RaycastFilterType.Exclude
+		rayParams.RespectCanCollide = true
+
 		grabMousePos:FireClient(player)
+		local mouseCon
+		mouseCon = grabMousePos.OnServerEvent:Connect(function(p, mousePos)
+			if p == player then
+				mouseCon:Disconnect()
+
+				local ray = workspace:Raycast(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position).Unit * strike.Range, rayParams)
+
+				if ray and ray.Instance then
+					local hitCharacter = ray.Instance:FindFirstAncestorOfClass("Model")
+
+					if hitCharacter and hitCharacter:FindFirstChild("Humanoid") then
+						hitCharacter.Humanoid:TakeDamage(strike.Damage)
+						local hitPos = hitCharacter.HumanoidRootPart.Position
+						local fx = abilityItems.LightningStrike.FX:Clone()
+
+						fx.FirstAttach.Position = Vector3.new(0, 17.75, 0)
+						fx.Position = Vector3.new(hitPos.X, fx.Size.Y / 2, hitPos.Z)
+						fx.Parent = workspace
+
+						local tweenDown = tweenService:Create(fx.FirstAttach, TweenInfo.new(.5), {Position = Vector3.new(0, -12.25, 0)})
+						tweenDown:Play()
+						tweenDown.Completed:Once(function()
+							for _, emitter in fx.EnableSecond:GetChildren() do
+								emitter.Enabled = true
+							end
+
+								for _, toEnable in fx:GetDescendants() do
+									if toEnable:IsA("ParticleEmitter") or toEnable:IsA("Beam") then
+										toEnable.Enabled = true
+									end
+								end
+								local hitbox = Instance.new("Part")
+								hitbox.Name = "Hitbox"
+								hitbox.Shape = Enum.PartType.Cylinder
+								hitbox.Anchored = true 
+								hitbox.CanCollide = false
+								hitbox.Transparency = 1
+
+								hitbox.Size = Vector3.new(strike.Range, fx.Size.Y, strike.Range)
+								hitbox.Position = fx.Position
+								hitbox.Parent = workspace 
+
+								local touching = workspace:GetPartsInPart(hitbox)
+								local alreadyAttacked = {}
+								for _, part in touching do
+									local foundChar = part:FindFirstAncestorOfClass("Model")
+
+									if foundChar and foundChar:FindFirstChild("Humanoid") and not table.find(alreadyAttacked, foundChar) and foundChar ~= character and foundChar ~= hitCharacter then
+										table.insert(alreadyAttacked, foundChar)
+										foundChar.Humanoid:TakeDamage(strike.ShockDamage)
+									end
+								end
+
+								hitbox:Destroy()
+
+								Debris:AddItem(fx, .5)
+							end)
+
+					end
+				end
+
+				task.delay(strike.Cooldown, function()
+					player:SetAttribute("LastAbility".. abilityNum, os.clock())
+					player:SetAttribute("CanAbility", nil)
+					useAbility:FireClient(player, "Ability".. abilityNum)
+				end)
+			end
+		end)
+	end
+end
+
+-- set walkspeed to 0
+function module.EletricOrb(player, character, staff, abilityNum)
+	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
+		player:SetAttribute("CanAbility", true)
+		local stats = abilityStats.EletricOrb
 		
-		local grabConnection
-		grabConnection = grabMousePos.OnServerEvent:Connect(function(p, mousePos)
-			if p == player and mousePos then
-				grabConnection:Disconnect()
+		grabMousePos:FireClient(player)
+		local mouseCon
 
-				caster:Fire(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position), iceStats.ProjectileSpeed, behavior)
+		mouseCon = grabMousePos.OnServerEvent:Connect(function(p, mousePos)
+			if p == player then
+				mouseCon:Disconnect()
+				local hitbox
+				local bullet = abilityItems.ElectricOrb.FX:Clone()
+				bullet.Parent = workspace.Effects
 
-				local bullet
+				bullet.CFrame = character.HumanoidRootPart.CFrame * CFrame.new(0,0,-3)
 
-				local lengthChanged = caster.LengthChanged:Connect(function(activeCast, lastPoint, rayDir, displacement, _, cosmeticBulletObject)		
-					cosmeticBulletObject.Parent = workspace
-					local blength = cosmeticBulletObject.Size.Z/2
+				local rayParams = RaycastParams.new()
+				rayParams.FilterDescendantsInstances = {character, VFXFolder}
+				rayParams.FilterType = Enum.RaycastFilterType.Exclude
+		
+				local caster = fastCast.new()
+		
+				local behavior = fastCast.newBehavior()
+				behavior.RaycastParams = rayParams
+				behavior.MaxDistance = stats.Range
+		
+				caster:Fire(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position), stats.Speed, behavior)
+				
+				local lengthChanged, termninating, hit, actualHit
+
+				lengthChanged = caster.LengthChanged:Connect(function(activeCast, lastPoint, rayDir, displacement)
+					local blength = bullet.Size.Z/2
 					local offset = CFrame.new(0,0,-(displacement-blength))
-					cosmeticBulletObject.CFrame = CFrame.lookAt(lastPoint, lastPoint+rayDir):ToWorldSpace(offset)
+					bullet:PivotTo(CFrame.lookAt(lastPoint, lastPoint+rayDir):ToWorldSpace(offset))
+		
+					if not hitbox then
+						hitbox = raycastHitbox.new(bullet)
+						hitbox.RaycastParams = RaycastParams.new()
+						hitbox.RaycastParams.FilterDescendantsInstances = {bullet, character, workspace.Effects}
+						hitbox.RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
+		
+						hitbox:HitStart()
+		
+						actualHit = hitbox.OnHit:Connect(function(part)
+							local foundModel = part:FindFirstAncestorOfClass("Model")
+							if foundModel and foundModel:FindFirstChildOfClass("Humanoid") then
+								local hum = foundModel:FindFirstChildOfClass("Humanoid")
+								print(part)
+								hum:TakeDamage(stats.Damage)
 
-					bullet = cosmeticBulletObject
+								foundModel.HumanoidRootPart.Anchored = true
+
+								task.delay(stats.StunLength, function()
+									foundModel.HumanoidRootPart.Anchored = false
+								end)
+							end
+		
+							actualHit:Disconnect()
+							hitbox:HitStop()
+							hitbox:Destroy()
+							activeCast:Terminate()
+						end)
+					end
 				end)
 
-				local rayHit
-				local terminated
-
-				rayHit = caster.RayHit:Connect(function(_, result, _, cosmeticBulletObject)
-					for _, v in cosmeticBulletObject:GetDescendants() do
-						if v:IsA("ParticleEmitter") then
-							v.Enabled = false
-						end
-					end
-
-					Debris:AddItem(cosmeticBulletObject, 2)
-
-					if result and result.Instance then
-						local foundModel = result.Instance:FindFirstAncestorOfClass("Model")
-
-						if foundModel then
-							foundModel.Humanoid:TakeDamage(iceStats.Damage)
-						end
-					end
-
-					rayHit:Disconnect()
-					lengthChanged:Disconnect()
-					terminated:Disconnect()
-				end)
-
-				terminated = caster.CastTerminating:Connect(function()
+				hit = caster.RayHit:Connect(function()
+					-- local impactEffect = slashParticles.Impact:Clone()
+					-- impactEffect.Parent = effectsFolder
+					-- impactEffect.CFrame = bullet.CFrame
+		
+					-- for _, effect in impactEffect:GetDescendants() do
+					-- 	if effect:IsA("ParticleEmitter") then
+					-- 		effect:Emit(5)
+					-- 	end
+					-- end
+					-- Debris:AddItem(impactEffect, 2)
+		
 					for _, v in bullet:GetDescendants() do
 						if v:IsA("ParticleEmitter") then
 							v.Enabled = false
 						end
 					end
-
+		
 					Debris:AddItem(bullet, 2)
-
-					rayHit:Disconnect()
+		
+					termninating:Disconnect()
 					lengthChanged:Disconnect()
-					terminated:Disconnect()
+					lengthChanged = nil
+					hit:Disconnect()
+				end)
+		
+				termninating = caster.CastTerminating:Connect(function()
+					termninating:Disconnect()
+					lengthChanged:Disconnect()
+					lengthChanged = nil
+					hit:Disconnect()
+					print("Terminating")
+		
+					for _, v in bullet:GetDescendants() do
+						if v:IsA("ParticleEmitter") then
+							v.Enabled = false
+						end
+					end
+		
+					Debris:AddItem(bullet, 2)
+					bullet = nil
+				end)
+		
+				task.delay(stats.Cooldown, function()
+					player:SetAttribute("LastAbility".. abilityNum, os.clock())
+					player:SetAttribute("CanAbility", nil)
+					useAbility:FireClient(player, "Ability".. abilityNum)
+
+					if lengthChanged then lengthChanged:Disconnect(); lengthChanged = nil end
+					if hit then hit:Disconnect() end
+					if actualHit then actualHit:HitStop(); actualHit:Destroy() end
+					if termninating then termninating:Disconnect() end
+					if bullet then bullet:Destroy() end
+				end)
+			end
+		end)
+	end
+end
+
+function module.Fireball(player, character, staff, abilityNum)
+	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
+		player:SetAttribute("CanAbility", true)
+		local stats = abilityStats.Fireball
+		
+		grabMousePos:FireClient(player)
+		local mouseCon
+
+		mouseCon = grabMousePos.OnServerEvent:Connect(function(p, mousePos)
+			if p == player then
+				mouseCon:Disconnect()
+				local hitbox
+				local bullet = abilityItems.Fireball.FX:Clone()
+				bullet.Parent = workspace.Effects
+
+				bullet.CFrame = character.HumanoidRootPart.CFrame * CFrame.new(0,0,-3)
+
+				local rayParams = RaycastParams.new()
+				rayParams.FilterDescendantsInstances = {character, VFXFolder}
+				rayParams.FilterType = Enum.RaycastFilterType.Exclude
+		
+				local caster = fastCast.new()
+		
+				local behavior = fastCast.newBehavior()
+				behavior.RaycastParams = rayParams
+				behavior.MaxDistance = stats.Range
+		
+				caster:Fire(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position), stats.Speed, behavior)
+				
+				local lengthChanged, termninating, hit, actualHit
+
+				lengthChanged = caster.LengthChanged:Connect(function(activeCast, lastPoint, rayDir, displacement)
+					local blength = bullet.Size.Z/2
+					local offset = CFrame.new(0,0,-(displacement-blength))
+					bullet:PivotTo(CFrame.lookAt(lastPoint, lastPoint+rayDir):ToWorldSpace(offset))
+		
+					if not hitbox then
+						hitbox = raycastHitbox.new(bullet)
+						hitbox.RaycastParams = RaycastParams.new()
+						hitbox.RaycastParams.FilterDescendantsInstances = {bullet, character, workspace.Effects}
+						hitbox.RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
+		
+						hitbox:HitStart()
+		
+						actualHit = hitbox.OnHit:Connect(function(part)
+							local foundModel = part:FindFirstAncestorOfClass("Model")
+							if foundModel and foundModel:FindFirstChildOfClass("Humanoid") then
+								local hum = foundModel:FindFirstChildOfClass("Humanoid")
+								print(part)
+								hum:TakeDamage(stats.Damage)
+							end
+		
+							actualHit:Disconnect()
+							hitbox:HitStop()
+							hitbox:Destroy()
+							activeCast:Terminate()
+						end)
+					end
 				end)
 
-				task.wait(iceStats.Delay)
+				hit = caster.RayHit:Connect(function()
+					-- local impactEffect = slashParticles.Impact:Clone()
+					-- impactEffect.Parent = effectsFolder
+					-- impactEffect.CFrame = bullet.CFrame
+		
+					-- for _, effect in impactEffect:GetDescendants() do
+					-- 	if effect:IsA("ParticleEmitter") then
+					-- 		effect:Emit(5)
+					-- 	end
+					-- end
+					-- Debris:AddItem(impactEffect, 2)
+		
+					for _, v in bullet:GetDescendants() do
+						if v:IsA("ParticleEmitter") then
+							v.Enabled = false
+						end
+					end
+		
+					Debris:AddItem(bullet, 2)
+		
+					termninating:Disconnect()
+					lengthChanged:Disconnect()
+					lengthChanged = nil
+					hit:Disconnect()
+				end)
+		
+				termninating = caster.CastTerminating:Connect(function()
+					termninating:Disconnect()
+					lengthChanged:Disconnect()
+					lengthChanged = nil
+					hit:Disconnect()
+					print("Terminating")
+		
+					for _, v in bullet:GetDescendants() do
+						if v:IsA("ParticleEmitter") then
+							v.Enabled = false
+						end
+					end
+		
+					Debris:AddItem(bullet, 2)
+					bullet = nil
+				end)
+		
+				task.delay(stats.Cooldown, function()
+					player:SetAttribute("LastAbility".. abilityNum, os.clock())
+					player:SetAttribute("CanAbility", nil)
+					useAbility:FireClient(player, "Ability".. abilityNum)
+
+					if lengthChanged then lengthChanged:Disconnect(); lengthChanged = nil end
+					if hit then hit:Disconnect() end
+					if actualHit then actualHit:HitStop(); actualHit:Destroy() end
+					if termninating then termninating:Disconnect() end
+					if bullet then bullet:Destroy() end
+				end)
+			end
+		end)
+	end
+end
+
+function module.Flare(player, character, staff, abilityNum)
+	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
+		player:SetAttribute("CanAbility", true)
+		local stats = abilityStats.Flare
+
+		local mouseGrab 
+
+		grabMousePos:FireClient(player)
+
+		mouseGrab = grabMousePos.OnServerEvent:Connect(function(p, mousePos)
+			if p == player then
+				mouseGrab:Disconnect()
+
+				local rayParams = RaycastParams.new()
+				rayParams.FilterDescendantsInstances = {character, VFXFolder}
+				rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+				local ray = workspace:Raycast(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position).Unit * stats.Range, rayParams)
+
+				if ray and ray.Instance then
+					local hitChar = ray.Instance:FindFirstAncestorOfClass("Model")
+
+					if hitChar and hitChar:FindFirstChild("Humanoid") then
+						local started = os.clock()
+						local renderstepped
+						local fx = abilityItems.Flare.FX:Clone()
+
+						fx.Parent = VFXFolder
+						
+						local weld = Instance.new("Weld", fx)
+						weld.Part0 = hitChar.HumanoidRootPart
+						weld.Part1 = fx
+						
+						local lastChecked = os.clock()
+
+						renderstepped = runService.Heartbeat:Connect(function()
+							local elapsedTime = os.clock() - started
+
+							if os.clock() - lastChecked >= 1 then
+								lastChecked = os.clock()
+								hitChar.Humanoid:TakeDamage(stats.Damage/stats.BurnLength)
+							end
+
+							if elapsedTime >= stats.BurnLength then
+								renderstepped:Disconnect()
+								fx:Destroy()
+							end
+						end)
+					end
+				end
 			end
 
-			useAbility:FireClient(player, "IceMeteor")
+			task.delay(stats.Cooldown, function()
+				player:SetAttribute("LastAbility".. abilityNum, os.clock())
+				player:SetAttribute("CanAbility", nil)
+				useAbility:FireClient(player, "Ability".. abilityNum)
+			end)
+		end)
+	end
+end
+
+function module.MeteorSwarm(player, character, staff, abilityNum)
+	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
+		player:SetAttribute("CanAbility", true)
+		local stats = abilityStats.MeteorSwarm
+
+		local mouseGrab 
+
+		grabMousePos:FireClient(player)
+
+		mouseGrab = grabMousePos.OnServerEvent:Connect(function(p, mousePos)
+			if p == player then
+				mouseGrab:Disconnect()
+
+				local rayParams = RaycastParams.new()
+				rayParams.FilterDescendantsInstances = {character, VFXFolder}
+				rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+				local ray = workspace:Raycast(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position).Unit * stats.Range, rayParams)
+
+				if ray and ray.Instance then
+					local hitChar = ray.Instance:FindFirstAncestorOfClass("Model")
+
+					if hitChar and hitChar:FindFirstChild("Humanoid") then
+						local started = os.clock()
+						local renderstepped
+						local fx = abilityItems.MeteorSwarm.FX:Clone()
+
+						fx.Parent = VFXFolder
+						
+						local weld = Instance.new("Weld", fx)
+						weld.Part0 = hitChar.HumanoidRootPart
+						weld.Part1 = fx
+						
+						local lastChecked = os.clock()
+
+						renderstepped = runService.Heartbeat:Connect(function()
+							local elapsedTime = os.clock() - started
+
+							if os.clock() - lastChecked >= 1 then
+								lastChecked = os.clock()
+								hitChar.Humanoid:TakeDamage(stats.MeteorDamage/stats.MeteorTime)
+							end
+
+							if elapsedTime >= stats.MeteorTime then
+								renderstepped:Disconnect()
+								fx:Destroy()
+
+								lastChecked = os.clock()
+								started = os.clock()
+
+								renderstepped = runService.Heartbeat:Connect(function()
+									local elapsedTime = os.clock() - started
+		
+									if os.clock() - lastChecked >= 1 then
+										lastChecked = os.clock()
+										hitChar.Humanoid:TakeDamage(stats.BurningDamage/stats.BurningTime)
+									end
+		
+									if elapsedTime >= stats.BurningTime then
+										renderstepped:Disconnect()
+									end
+								end)
+							end
+						end)
+					end
+				end
+			end
+
+			task.delay(stats.Cooldown, function()
+				player:SetAttribute("LastAbility".. abilityNum, os.clock())
+				player:SetAttribute("CanAbility", nil)
+				useAbility:FireClient(player, "Ability".. abilityNum)
+			end)
+		end)
+	end
+end
+
+function module.LightningStrike(player, character, staff, abilityNum)
+	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
+		player:SetAttribute("CanAbility", true)
+		local stats = abilityStats.IceMeteor
+		
+		for i = 1,2,1 do
+			grabMousePos:FireClient(player)
+			local mouseCon
+	
+			mouseCon = grabMousePos.OnServerEvent:Connect(function(p, mousePos)
+				if p == player then
+					mouseCon:Disconnect()
+					local hitbox
+					local bullet = abilityItems.ElectricOrb.FX:Clone()
+					bullet.Parent = workspace.Effects
+	
+					bullet.CFrame = character.HumanoidRootPart.CFrame * CFrame.new(0,0,-3)
+	
+					local rayParams = RaycastParams.new()
+					rayParams.FilterDescendantsInstances = {character, VFXFolder}
+					rayParams.FilterType = Enum.RaycastFilterType.Exclude
+			
+					local caster = fastCast.new()
+			
+					local behavior = fastCast.newBehavior()
+					behavior.RaycastParams = rayParams
+					behavior.MaxDistance = stats.Range
+			
+					caster:Fire(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position), stats.Speed, behavior)
+					
+					local lengthChanged, termninating, hit, actualHit
+	
+					lengthChanged = caster.LengthChanged:Connect(function(activeCast, lastPoint, rayDir, displacement)
+						local blength = bullet.Size.Z/2
+						local offset = CFrame.new(0,0,-(displacement-blength))
+						bullet:PivotTo(CFrame.lookAt(lastPoint, lastPoint+rayDir):ToWorldSpace(offset))
+			
+						if not hitbox then
+							hitbox = raycastHitbox.new(bullet)
+							hitbox.RaycastParams = RaycastParams.new()
+							hitbox.RaycastParams.FilterDescendantsInstances = {bullet, character, workspace.Effects}
+							hitbox.RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
+			
+							hitbox:HitStart()
+			
+							actualHit = hitbox.OnHit:Connect(function(part)
+								local foundModel = part:FindFirstAncestorOfClass("Model")
+								if foundModel and foundModel:FindFirstChildOfClass("Humanoid") then
+									local hum = foundModel:FindFirstChildOfClass("Humanoid")
+									print(part)
+									hum:TakeDamage(stats.Damage)
+	
+									foundModel.HumanoidRootPart.Anchored = true
+	
+									task.delay(stats.StunLength, function()
+										foundModel.HumanoidRootPart.Anchored = false
+									end)
+								end
+			
+								actualHit:Disconnect()
+								hitbox:HitStop()
+								hitbox:Destroy()
+								activeCast:Terminate()
+							end)
+						end
+					end)
+	
+					hit = caster.RayHit:Connect(function()
+						-- local impactEffect = slashParticles.Impact:Clone()
+						-- impactEffect.Parent = effectsFolder
+						-- impactEffect.CFrame = bullet.CFrame
+			
+						-- for _, effect in impactEffect:GetDescendants() do
+						-- 	if effect:IsA("ParticleEmitter") then
+						-- 		effect:Emit(5)
+						-- 	end
+						-- end
+						-- Debris:AddItem(impactEffect, 2)
+			
+						for _, v in bullet:GetDescendants() do
+							if v:IsA("ParticleEmitter") then
+								v.Enabled = false
+							end
+						end
+			
+						Debris:AddItem(bullet, 2)
+			
+						termninating:Disconnect()
+						lengthChanged:Disconnect()
+						lengthChanged = nil
+						hit:Disconnect()
+					end)
+			
+					termninating = caster.CastTerminating:Connect(function()
+						termninating:Disconnect()
+						lengthChanged:Disconnect()
+						lengthChanged = nil
+						hit:Disconnect()
+						print("Terminating")
+			
+						for _, v in bullet:GetDescendants() do
+							if v:IsA("ParticleEmitter") then
+								v.Enabled = false
+							end
+						end
+			
+						Debris:AddItem(bullet, 2)
+						bullet = nil
+					end)
+			
+					task.delay(stats.Cooldown, function()
+						player:SetAttribute("LastAbility".. abilityNum, os.clock())
+						player:SetAttribute("CanAbility", nil)
+						useAbility:FireClient(player, "Ability".. abilityNum)
+	
+						if lengthChanged then lengthChanged:Disconnect(); lengthChanged = nil end
+						if hit then hit:Disconnect() end
+						if actualHit then actualHit:HitStop(); actualHit:Destroy() end
+						if termninating then termninating:Disconnect() end
+						if bullet then bullet:Destroy() end
+					end)
+				end
+			end)
+
+			task.wait(.3)
+		end
+	end
+end
+
+function module.Blizzard(player, character, staff, abilityNum)
+	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
+		player:SetAttribute("CanAbility", true)
+		local stats = abilityStats.Blizzard
+
+		local mouseCon
+		grabMousePos:FireClient(player)
+
+		mouseCon = grabMousePos.OnServerEvent:Connect(function(p, mousePos)
+			if p == player then
+				mouseCon:Disconnect()
+
+				local rayParams = RaycastParams.new()
+				rayParams.FilterDescendantsInstances = {character, VFXFolder}
+				rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+				local ray = workspace:Raycast(character.HumanoidRootPart.Position, (mousePos - character.HumanoidRootPart.Position).Unit * stats.Range, rayParams)
+
+				if ray and ray.Instance then
+					local hitChar = ray.Instance:FindFirstAncestorOfClass("Model")
+
+					if hitChar and hitChar:FindFirstChild("Humanoid") then
+						local hitHum = hitChar.Humanoid
+
+						local fx = abilityItems.Blizzard.FX:Clone()
+
+						fx.Parent = VFXFolder
+						
+						local weld = Instance.new("Weld", fx)
+						weld.Part0 = hitChar.HumanoidRootPart
+						weld.Part1 = fx
+
+
+						hitHum:SetAttribute("PreviousWalkspeed", hitHum.WalkSpeed)
+						hitHum.WalkSpeed = hitHum.WalkSpeed / 2
+
+						local lastChecked = 0
+						local started = os.clock()
+						local renderstepped 
+
+						renderstepped = runService.Heartbeat:Connect(function()
+							if os.clock() - lastChecked >= 1 then
+								lastChecked = os.clock()
+								hitHum:TakeDamage(stats.Damage/stats.SlowTime)
+							end
+
+							if os.clock() - started >= stats.SlowTime then
+								renderstepped:Disconnect()
+								hitHum.WalkSpeed = hitHum:GetAttribute("PreviousWalkspeed")
+								hitHum:SetAttribute("PreviousWalkspeed", nil)
+
+								for _, particle in fx:GetDescendants() do
+									if particle:IsA("Particle") then
+										particle.Enabled = false
+									end
+								end
+
+								Debris:AddItem(fx, 2)
+							end
+						end)
+					end
+				end
+
+				task.delay(stats.Cooldown, function()
+					player:SetAttribute("LastAbility".. abilityNum, os.clock())
+					player:SetAttribute("CanAbility", nil)
+					useAbility:FireClient(player, "Ability".. abilityNum)
+				end)
+			end
 		end)
 	end
 end

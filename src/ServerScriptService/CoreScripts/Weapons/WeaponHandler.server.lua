@@ -71,7 +71,7 @@ useAbility.OnServerEvent:Connect(function(player, abilityName, abilityNum)
 			if func then
 				local plrSetup = player.GameData.PlayerSetup.Value
 
-				if plrSetup:match(abilityName) then 
+				if plrSetup:match(abilityName) then
 					coroutine.wrap(func)(player, character, staff, abilityNum)
 					success = abilityName
 				end

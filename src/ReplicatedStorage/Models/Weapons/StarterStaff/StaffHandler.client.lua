@@ -12,6 +12,8 @@ local ability2Animation = character.Humanoid.Animator:LoadAnimation(script:WaitF
 local mouse = player:GetMouse()
 local staff = script.Parent
 
+mouse.TargetFilter = workspace:WaitForChild("Effects")
+
 local attackSpeed = staff:GetAttribute("AttackSpeed")
 local ability1Speed = staff:GetAttribute("Ability1Speed")
 local ability2Speed = staff:GetAttribute("Ability2Speed")
@@ -34,7 +36,7 @@ local canAbility1 = true
 local canAbility2 = true
 
 local ability1Name = "Ability1"
-local ability2Name = "IceMeteor"
+local ability2Name = "LightningStrike"
 
 local function cooldownVisualizer(speed, typ, ui)
 	local timeStarted = os.clock()
@@ -80,7 +82,7 @@ local function ability1Func(name, inputState)
 			
 		useAbility:FireServer(name, 1, mouse.Hit.Position)
 
-		useAbility.OnClientEvent:Connect(function(_, result)
+		useAbility.OnClientEvent:Once(function(_, result)
 			if result == name then 
 				canAbility1 = false
 				canAbility2 = false
@@ -101,7 +103,7 @@ local function ability2Func(name, inputState)
 		end
 		useAbility:FireServer(name, 2, mouse.Hit.Position)
 
-		useAbility.OnClientEvent:Connect(function(_, result)
+		useAbility.OnClientEvent:Once(function(_, result)
 			if result == name then 
 				canAbility1 = false
 				canAbility2 = false
@@ -162,5 +164,6 @@ if uis.TouchEnabled then
 end
 
 grabMousePos.OnClientEvent:Connect(function()
+	print("BasePart")
 	grabMousePos:FireServer(mouse.Hit.Position)
 end)
