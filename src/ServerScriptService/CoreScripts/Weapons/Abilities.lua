@@ -284,7 +284,7 @@ end
 fastCast.VisualizeCasts = false
 
 --LightningStrike
-function module.a(player, character, staff, abilityNum)
+function module.A(player, character, staff, abilityNum)
 	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
 		player:SetAttribute("CanAbility", true)
 		local strike = abilityStats.LightningStrike
@@ -309,6 +309,12 @@ function module.a(player, character, staff, abilityNum)
 						hitCharacter.Humanoid:TakeDamage(strike.Damage)
 						local hitPos = hitCharacter.HumanoidRootPart.Position
 						local fx = abilityItems.LightningStrike.FX:Clone()
+
+						for _, toEnable in fx:GetDescendants() do
+							if toEnable:IsA("ParticleEmitter") or toEnable:IsA("Beam") and toEnable.Name ~= "FirstBeam" then
+								toEnable.Enabled = false
+							end
+						end
 
 						fx.FirstAttach.Position = Vector3.new(0, 17.75, 0)
 						fx.Position = Vector3.new(hitPos.X, fx.Size.Y / 2, hitPos.Z)
@@ -641,6 +647,7 @@ function module.Flare(player, character, staff, abilityNum)
 						fx.Parent = VFXFolder
 						
 						local weld = Instance.new("Weld", fx)
+						fx:PivotTo(hitChar.HumanoidRootPart:GetPivot())
 						weld.Part0 = hitChar.HumanoidRootPart
 						weld.Part1 = fx
 						
@@ -749,7 +756,7 @@ function module.MeteorSwarm(player, character, staff, abilityNum)
 	end
 end
 
-function module.LightningStrike(player, character, staff, abilityNum)
+function module.IceMeteor(player, character, staff, abilityNum)
 	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
 		player:SetAttribute("CanAbility", true)
 		local stats = abilityStats.IceMeteor
@@ -762,7 +769,7 @@ function module.LightningStrike(player, character, staff, abilityNum)
 				if p == player then
 					mouseCon:Disconnect()
 					local hitbox
-					local bullet = abilityItems.ElectricOrb.FX:Clone()
+					local bullet = abilityItems.IceMeteor.FX:Clone()
 					bullet.Parent = workspace.Effects
 	
 					bullet.CFrame = character.HumanoidRootPart.CFrame * CFrame.new(0,0,-3)
