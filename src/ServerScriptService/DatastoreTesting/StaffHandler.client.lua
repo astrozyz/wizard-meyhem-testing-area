@@ -38,6 +38,8 @@ local canAbility2 = true
 local ability1Name = "Ability1"
 local ability2Name = "LightningStrike"
 
+print("Got through the variables lol")
+
 local function cooldownVisualizer(speed, typ, ui)
 	local timeStarted = os.clock()
 	table.insert(_G.Cooldowns, {timeStarted, speed, function() if typ then canAttack = true end; ui.CooldownText.Visible = false end, function()

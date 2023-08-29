@@ -284,7 +284,7 @@ end
 fastCast.VisualizeCasts = false
 
 --LightningStrike
-function module.A(player, character, staff, abilityNum)
+function module.LightningStrike(player, character, staff, abilityNum)
 	if os.clock() - player:GetAttribute("LastAbility".. abilityNum) >= staff:GetAttribute("Ability"..abilityNum.."Speed") and not player:GetAttribute("CanAbility") then
 		player:SetAttribute("CanAbility", true)
 		local strike = abilityStats.LightningStrike

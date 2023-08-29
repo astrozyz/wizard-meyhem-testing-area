@@ -125,17 +125,17 @@ function module.MobAttacking(player, character, mob)
 			mob:Destroy()
 		end)
 		
-		local xp = player:GetAttribute("XP")
-		local level = player:GetAttribute("Level")
-		local maxXP = 750 * (level + 0.5)
+		local xp = player.GameData.XP
+		local level = player.GameData.Level
+		local maxXP = 750 * (level.Value + 0.5)
 		
-		local tempXP = xp + mob:GetAttribute("XP")
+		local tempXP = xp.Value + mob:GetAttribute("XP")
 		
 		if tempXP >= maxXP then 
 			local remainder = tempXP - maxXP
 			
-			player:SetAttribute("Level", level + 1)
-			player:SetAttribute("XP", math.abs(remainder))
+			level.Value += 1
+			xp.Value = math.abs(remainder)
 			
 			local fx = game.ReplicatedStorage.Models.General.LevelUpFX:GetChildren()
 			
@@ -150,7 +150,7 @@ function module.MobAttacking(player, character, mob)
 				end)
 			end
 		else
-			player:SetAttribute("XP", tempXP)
+			xp.Value = tempXP
 		end
 	else
 		table.insert(module.CurrentMobs, mob)

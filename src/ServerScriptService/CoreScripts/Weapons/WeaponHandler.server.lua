@@ -25,11 +25,11 @@ swingEvent.OnServerEvent:Connect(function(player, mouseTarget : Part)
 			if hitChar and hitChar:FindFirstChild("Humanoid") and (characterPos - hitChar:GetPivot().Position).Magnitude <= range then
 				local hitHumanoid = hitChar.Humanoid
 				
-				local lastSwung = player:GetAttribute("LastSwung")
+				local lastSwung = player.GameData.Cooldowns.LastSwung
 				local currentTime = os.clock()
 
-				if currentTime - lastSwung >= attackSpeed then 
-					player:SetAttribute("LastSwung", os.clock())
+				if currentTime - lastSwung.Value >= attackSpeed then 
+					lastSwung.Value = os.clock()
 
 					hitHumanoid:TakeDamage(damage)
 					swingEvent:FireClient(player, true)
@@ -69,9 +69,9 @@ useAbility.OnServerEvent:Connect(function(player, abilityName, abilityNum)
 			local func = abilities[abilityName]
 			
 			if func then
-				local plrSetup = player.GameData.PlayerSetup.Value
+				local ability1, ability2 = player.GameData.Ability1, player.GameData.Ability2
 
-				if plrSetup:match(abilityName) then
+				if ability1.Value == abilityName or ability2.Value == abilityName then
 					coroutine.wrap(func)(player, character, staff, abilityNum)
 					success = abilityName
 				end

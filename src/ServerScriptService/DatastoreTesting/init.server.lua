@@ -142,7 +142,10 @@ game.Players.PlayerAdded:Connect(function(player)
             local foundStaff = gameModels:FindFirstChild(playerEquippedItems.Weapon, true)
 
             if foundStaff then 
-                foundStaff:Clone().Parent = player.Character
+                local givenStaff = foundStaff:Clone()
+                givenStaff.Parent = player.Character
+                local staffHandler = script.StaffHandler:Clone()
+                staffHandler.Parent = givenStaff
             end
         end
     end
@@ -166,7 +169,10 @@ game.Players.PlayerAdded:Connect(function(player)
             local foundStaff = gameModels:FindFirstChild(playerEquippedItems.Weapon, true)
 
             if foundStaff then 
-                foundStaff:Clone().Parent = char
+                local givenStaff = foundStaff:Clone()
+                local staffHandler = script.StaffHandler:Clone()
+                staffHandler.Parent = givenStaff
+                givenStaff.Parent = player.Character
             end
         end
     end)

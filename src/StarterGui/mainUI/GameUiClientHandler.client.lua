@@ -44,7 +44,9 @@ local xpBar = xpUi:WaitForChild("Bar")
 local xpProgress = xpUi:WaitForChild("Progress")
 
 local function openUi(originalPos : UDim2, tweenUi : ImageLabel)
+	print("a")
 	if not tweenUi.Visible then
+		print("sdjfndsj")
 		cantween = false
 		local uiTweenInfo = TweenInfo.new(.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0)
 		tweenUi.Position = UDim2.fromScale(0.229,1)
@@ -102,7 +104,7 @@ local function connectShopButtons()
 					attackRange.Text = "Range: ".. tostring(btn:GetAttribute("Range"))
 					elementLable.Text = "Element: ".. btn:GetAttribute("Element")
 				elseif shopCurrentTab == armorTab then 
-					elementLable.Text = "Protection: ".. btn:GetAttribute("Protection")
+					elementLable.Text = "Level Required: ".. btn:GetAttribute("Level")
 				else
 					elementLable.Text = "Effect: ".. btn:GetAttribute("Effect")
 				end
@@ -168,7 +170,7 @@ shopBtn.MouseButton1Click:Connect(function()
 				t:WaitForChild("ItemName").Text = v.Name
 				t.Image = v:GetAttribute("ShopIcon")
 				t.Name = tostring(v:GetAttribute("ShopPrice"))
-				t:SetAttribute("Protection", v:GetAttribute("Protection"))
+				t:SetAttribute("Level", v:GetAttribute("Protection"))
 				t.Parent = shopScrollBar
 			end
 			shopCurrentTab = armorTab
@@ -266,20 +268,19 @@ shopClose.MouseButton1Click:Connect(function()
 	closeButton(shopFrame, shopOriginalPos, shopButtonConnections)
 end)
 
-repeat task.wait() until player:GetAttribute("Level") and player:GetAttribute("XP")
-xpLevelNum.Text = tostring(player:GetAttribute("Level"))
+xpLevelNum.Text = tostring(player.GameData.Level.Value)
 
-player:GetAttributeChangedSignal("Level"):Connect(function()
-	xpLevelNum.Text = tostring(player:GetAttribute("Level"))
+player.GameData.Level.Changed:Connect(function()
+	xpLevelNum.Text = tostring(player.GameData.Level.Value)
 end)
 
-local oldXP = player:GetAttribute("XP")
-xpProgress.Text = tostring(oldXP).. "/".. tostring(750 * (player:GetAttribute("Level") + 0.5))
-xpBar.Size = UDim2.fromScale(math.clamp(oldXP/(750 * (player:GetAttribute("Level") + 0.5)), 0, 1), 1)
+local oldXP = player.GameData.XP.Value
+xpProgress.Text = tostring(oldXP).. "/".. tostring(750 * (player.GameData.Level.Value + 0.5))
+xpBar.Size = UDim2.fromScale(math.clamp(oldXP/(750 * (player.GameData.Level.Value + 0.5)), 0, 1), 1)
 
-player:GetAttributeChangedSignal("XP"):Connect(function()
-	local currentXP = player:GetAttribute("XP")
-	local maxLevel = 750 * (player:GetAttribute("Level") + 0.5)
+player.GameData.XP.Changed:Connect(function()
+	local currentXP = player.GameData.XP.Value
+	local maxLevel = 750 * (player.GameData.Level.Value + 0.5)
 
 	if currentXP < oldXP then
 		local tweenBack = tweenService:Create(xpBar, TweenInfo.new(.2), {Size = UDim2.fromScale(0,1)})
@@ -451,8 +452,8 @@ local invCategories = invUi:WaitForChild("Categories"):GetChildren()
 local invTemplate = script:WaitForChild("InventoryTemplate")
 local invButtonHolder = invUi:WaitForChild("Items")
 
-local inventoryCurrentTab = "Weapons"
-local invOldTab
+local inventoryCurrentTab = "Staffs"
+local invOldTab = "Staffs"
 local invEquipment = invUi:WaitForChild("Equipment")
 
 local function len(t)
@@ -468,24 +469,31 @@ end
 local equipItemEvent = events.Gameplay.EquipItem
 
 local function loadInv()
-	local playerInv = player.GameData.Inventory
+	for _, con in invConnections do
+		con:Disconnect()
+	end
+
+	for _, button in invButtonHolder:GetChildren() do
+		if button:IsA("ImageButton") then
+			button:Destroy()
+		end
+	end
+	local playerInv = player.GameData.Inventory 
 	local decoded = http:JSONDecode(playerInv.Value)
 
 	local currentIndex = decoded[inventoryCurrentTab]
-	
-	for _, oldBtn in invButtonHolder:GetChildren() do 
-		if oldBtn:IsA("GuiButton") then
-			oldBtn:Destroy()
-		end
-	end
-	for itemName, itemAmt in currentIndex do
-		local foundItem = models:FindFirstChild(itemName, true)
-		if foundItem then
-			for _ = 1, itemAmt, 1 do
+	print(inventoryCurrentTab)
+
+	if currentIndex then
+		for _, v in currentIndex do
+			local foundItem = models:FindFirstChild(v, true)
+		
+			if foundItem then
 				local temp = invTemplate:Clone()
 				temp.Name = foundItem.Name
 				temp.Image = foundItem:GetAttribute("ShopIcon")
 				temp.Parent = invButtonHolder
+
 				if inventoryCurrentTab ~= "Potions" then
 					invConnections[len(invConnections) + 1] = temp.MouseButton1Click:Connect(function()
 						local foundCat = invEquipment:FindFirstChild(inventoryCurrentTab)
@@ -502,11 +510,19 @@ local function loadInv()
 					end)
 				end
 			end
-		end 
+		end
 	end
 end
 
+local sdfsuif = game:GetService("ReplicatedStorage").Models:FindFirstChild(player.GameData.Staff.Value, true);
+invEquipment.Staffs.Image = sdfsuif:GetAttribute("ShopIcon");
+
+if player.GameData.Armor.Value and game:GetService("ReplicatedStorage").Models:FindFirstChild(player.GameData.Armor.Value, true) then
+	invEquipment.Armor.Image = game:GetService("ReplicatedStorage").Models:FindFirstChild(player.GameData.Armor.Value, true):GetAttribute("ShopIcon");
+end;
+
 invBtn.MouseButton1Click:Connect(function()
+	print("jsndfj")
 	if not invUi.Visible and cantween then
 		loadInv()
 		openUi(shopOriginalPos, invUi)
@@ -527,6 +543,16 @@ end
 
 invClose.MouseButton1Click:Connect(function()
 	closeButton(invUi, shopOriginalPos, invConnections)
+
+	for _, con in invConnections do
+		con:Disconnect()
+	end
+
+	for _, button in invButtonHolder:GetChildren() do
+		if button:IsA("ImageButton") then
+			button:Destroy()
+		end
+	end
 end)
 
 local settingsBtn = ui:WaitForChild("Settings")
